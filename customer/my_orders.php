@@ -15,6 +15,33 @@ require_once '../config/db.php';
 
 $userId = $_SESSION['user_id'];
 
+// ─── Handle Order Cancellation ───────────────────────────────────────────────
+$success_msg = '';
+$error_msg = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
+    $cancelId = (int)$_POST['cancel_order_id'];
+    
+    // Verify order belongs to user
+    $checkRes = mysqli_query($conn, "SELECT status FROM orders WHERE id = $cancelId AND customer_id = $userId");
+    $orderData = mysqli_fetch_assoc($checkRes);
+    
+    if ($orderData) {
+        if ($orderData['status'] === 'pending') {
+            $updateQ = "UPDATE orders SET status = 'cancelled' WHERE id = $cancelId AND customer_id = $userId";
+            if (mysqli_query($conn, $updateQ)) {
+                $success_msg = "Order #" . str_pad($cancelId, 4, '0', STR_PAD_LEFT) . " has been successfully cancelled.";
+            } else {
+                $error_msg = "Could not cancel order due to a system error. Please try again.";
+            }
+        } else {
+            $error_msg = "Order can no longer be cancelled as it is in the '" . ucfirst($orderData['status']) . "' stage.";
+        }
+    } else {
+        $error_msg = "Invalid order specified.";
+    }
+}
+
 // ─── Fetch All Orders for This Customer ──────────────────────────────────────
 // Most recent orders first (ORDER BY created_at DESC)
 $ordersRes = mysqli_query($conn,
@@ -97,6 +124,17 @@ $statusColors = [
     </div>
 
     <div class="page-body">
+        <?php if ($success_msg): ?>
+            <div class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #c3e6cb;">
+                ✅ <?= htmlspecialchars($success_msg) ?>
+            </div>
+        <?php endif; ?>
+        <?php if ($error_msg): ?>
+            <div class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
+                ⚠️ <?= htmlspecialchars($error_msg) ?>
+            </div>
+        <?php endif; ?>
+
         <?php if (count($orders) > 0): ?>
         <div class="table-card">
             <div class="table-card-header">
@@ -157,6 +195,27 @@ $statusColors = [
                                     📍 Delivery to: <strong><?= htmlspecialchars($order['delivery_address']) ?></strong>
                                 </p>
                                 <?php endif; ?>
+                                
+                                <!-- Cancellation UI -->
+                                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center;">
+                                    <?php if ($order['status'] === 'pending'): ?>
+                                        <form method="POST" action="" onsubmit="return confirm('Are you sure you want to cancel this order? This action cannot be undone.');">
+                                            <input type="hidden" name="cancel_order_id" value="<?= $order['id'] ?>">
+                                            <button type="submit" class="btn btn-danger" style="background-color: var(--danger-color, #dc3545); border: none; padding: 6px 14px; font-size: 0.85rem;">
+                                                ❌ Cancel Order
+                                            </button>
+                                        </form>
+                                    <?php elseif ($order['status'] === 'cancelled'): ?>
+                                        <span style="font-size: 0.85rem; color: var(--danger-color, #dc3545); font-weight: 600;">⚠️ This order has been cancelled</span>
+                                    <?php else: ?>
+                                        <span style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px;">
+                                            <button disabled class="btn btn-outline" style="opacity: 0.6; cursor: not-allowed; padding: 6px 14px; font-size: 0.85rem;">
+                                                ❌ Cancel Order
+                                            </button>
+                                            <span style="margin-left: 10px;">Order can no longer be cancelled (Status: <?= ucfirst($order['status']) ?>)</span>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </td>
                     </tr>
