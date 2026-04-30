@@ -1,0 +1,537 @@
+/*
+ * assets/css/dashboard.css
+ * ========================
+ * DASHBOARD SHARED STYLESHEET
+ *
+ * Used by ALL three dashboards:
+ *   - Customer dashboard (customer/)
+ *   - Shopkeeper dashboard (shopkeeper/)
+ *   - Admin dashboard (admin/)
+ *
+ * Design: Dark sidebar + light main content area
+ * Colors:
+ *   --accent:   #e91e8c  (neon pink - matches main site)
+ *   --dark:     #0f0f1a  (very dark navy)
+ *   --sidebar:  #1a1a2e
+ *   --card:     #ffffff
+ */
+
+/* ─── CSS Variables (Design Tokens) ──────────────────────────────────────────── */
+:root {
+    --accent:       #e91e8c;
+    --accent-light: #ff6ec7;
+    --dark:         #0f0f1a;
+    --sidebar-bg:   #1a1a2e;
+    --sidebar-hover:#16213e;
+    --body-bg:      #f4f6f9;
+    --card-bg:      #ffffff;
+    --text-dark:    #1e1e2e;
+    --text-muted:   #6b7280;
+    --border:       #e5e7eb;
+    --success:      #10b981;
+    --warning:      #f59e0b;
+    --danger:       #ef4444;
+    --info:         #3b82f6;
+    --sidebar-width: 260px;
+}
+
+/* ─── Reset & Base ──────────────────────────────────────────────────────────── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body.dashboard-body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--body-bg);
+    color: var(--text-dark);
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ─── SIDEBAR ─────────────────────────────────────────────────────────────────
+   The left panel with navigation links
+   It stays fixed while the main content scrolls
+─────────────────────────────────────────────────────────────────────────────── */
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--sidebar-bg);
+    min-height: 100vh;
+    position: fixed;       /* Stays on screen while scrolling */
+    left: 0; top: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transition: transform 0.3s ease;
+}
+
+/* Bakery brand/logo at the top of the sidebar */
+.sidebar-brand {
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.sidebar-brand img {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--accent);
+}
+.sidebar-brand h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.3;
+}
+.sidebar-brand span {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Navigation menu links */
+.sidebar-nav {
+    padding: 20px 0;
+    flex: 1;
+}
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 22px;
+    color: rgba(255,255,255,0.70);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+    margin: 2px 0;
+}
+.sidebar-nav a:hover,
+.sidebar-nav a.active {
+    background: var(--sidebar-hover);
+    color: #ffffff;
+    border-left-color: var(--accent);
+}
+.sidebar-nav a .nav-icon { font-size: 1.2rem; width: 24px; text-align: center; }
+.sidebar-nav .nav-section-label {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 16px 22px 6px;
+    font-weight: 600;
+}
+
+/* Logout button at the bottom of sidebar */
+.sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-footer a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    font-size: 0.88rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+.sidebar-footer a:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+/* ─── MAIN CONTENT AREA ───────────────────────────────────────────────────────
+   The right-side content, shifted right to make room for the sidebar
+─────────────────────────────────────────────────────────────────────────────── */
+.main-content {
+    margin-left: var(--sidebar-width); /* Push right so sidebar doesn't overlap */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Top bar / header of the main area */
+.topbar {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0;
+    z-index: 50;
+}
+.topbar-title h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+.topbar-title p { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+.topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.topbar-user .avatar {
+    width: 38px; height: 38px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 1rem;
+}
+.topbar-user .user-info { text-align: right; }
+.topbar-user .user-info strong { display: block; font-size: 0.88rem; color: var(--text-dark); }
+.topbar-user .user-info span  { font-size: 0.75rem; color: var(--accent); text-transform: capitalize; }
+
+/* The page body (below the topbar) */
+.page-body { padding: 30px; flex: 1; }
+
+/* ─── STAT CARDS (Dashboard overview numbers) ─────────────────────────────── */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 22px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.10); }
+.stat-icon {
+    width: 54px; height: 54px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+}
+.stat-icon.pink   { background: rgba(233,30,140,0.12); }
+.stat-icon.blue   { background: rgba(59,130,246,0.12); }
+.stat-icon.green  { background: rgba(16,185,129,0.12); }
+.stat-icon.orange { background: rgba(245,158,11,0.12); }
+.stat-info h3 { font-size: 1.7rem; font-weight: 800; color: var(--text-dark); }
+.stat-info p  { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+
+/* ─── DATA TABLES ─────────────────────────────────────────────────────────── */
+.table-card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 24px 28px; /* slightly wider padding for breathing room */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+}
+.table-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.table-card-header h2 { font-size: 1.05rem; font-weight: 700; color: var(--text-dark); }
+
+/* Table styles */
+.data-table {
+    width: 100%;
+    table-layout: auto;          /* columns size to content, but respect width hints */
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+.data-table th {
+    background: var(--body-bg);
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.5px;
+    padding: 11px 16px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;         /* keep header labels on one line */
+}
+.data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dark);
+    vertical-align: middle;      /* vertically centre all cell content */
+    line-height: 1.45;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(233,30,140,0.03); transition: background 0.15s; }
+
+/* ── Column width hints (applied via th selectors) ── */
+/* These give the browser strong hints so columns don't collapse */
+.data-table th:first-child  { min-width: 180px; }   /* name / user col */
+.data-table th.col-address  { min-width: 160px; width: 22%; }
+.data-table th.col-owner,
+.data-table th.col-role     { min-width: 110px; width: 12%; }
+.data-table th.col-status   { min-width: 100px; width: 10%; text-align: center; }
+.data-table td.col-status   { text-align: center; }
+.data-table th.col-phone    { min-width: 120px; width: 12%; }
+.data-table th.col-orders   { min-width: 70px;  width: 8%;  text-align: center; }
+.data-table td.col-orders   { text-align: center; }
+.data-table th.col-joined   { min-width: 110px; width: 11%; white-space: nowrap; }
+.data-table th.col-actions,
+.data-table td.col-actions  { width: 120px; min-width: 100px; text-align: right; white-space: nowrap; }
+
+/* Actions cell: keep buttons in a single row */
+.data-table td.actions,
+.data-table td.col-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+.actions-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+/* ─── STATUS BADGES ───────────────────────────────────────────────────────── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+.badge-pending    { background: rgba(245,158,11,0.15);  color: #92400e; }
+.badge-preparing  { background: rgba(59,130,246,0.15);  color: #1e40af; }
+.badge-ready      { background: rgba(16,185,129,0.15);  color: #065f46; }
+.badge-completed  { background: rgba(16,185,129,0.20);  color: #064e3b; }
+.badge-cancelled  { background: rgba(239,68,68,0.15);   color: #991b1b; }
+.badge-delivery   { background: rgba(233,30,140,0.12);  color: #9d174d; }
+.badge-pickup     { background: rgba(139,92,246,0.12);  color: #5b21b6; }
+.badge-active     { background: rgba(16,185,129,0.12);  color: #065f46; }
+.badge-inactive   { background: rgba(239,68,68,0.12);   color: #991b1b; }
+
+/* ─── BUTTONS ─────────────────────────────────────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #c2186e; }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #059669; }
+.btn-danger  { background: var(--danger); color: white; }
+.btn-danger:hover  { background: #dc2626; }
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dark);
+}
+.btn-outline:hover { background: var(--body-bg); }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+
+/* Legacy selector kept for any inline styles already using it */
+.data-table td.actions { text-align: right; white-space: nowrap; }
+
+/* Make form cards slightly narrower so the table has priority on wide screens */
+.form-card { max-width: 520px; }
+
+/* ─── FORMS (inside dashboards) ──────────────────────────────────────────── */
+.form-card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 22px 22px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+    max-width: 520px;
+}
+.form-card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 24px; }
+.form-group { margin-bottom: 18px; }
+.form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: 'Poppins', sans-serif;
+    color: var(--text-dark);
+    background: white;
+    transition: border-color 0.2s;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ─── ALERT MESSAGES ─────────────────────────────────────────────────────── */
+.alert {
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.alert-success { background: rgba(16,185,129,0.12); color: #065f46; border: 1px solid rgba(16,185,129,0.3); }
+.alert-error   { background: rgba(239,68,68,0.12);  color: #991b1b; border: 1px solid rgba(239,68,68,0.3);  }
+.alert-info    { background: rgba(59,130,246,0.12); color: #1e40af; border: 1px solid rgba(59,130,246,0.3); }
+
+/* ─── PRODUCT / CAKE CARDS (for shop catalog) ────────────────────────────── */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+}
+.product-card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.product-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,0.10); }
+.product-card img {
+    width: 100%; height: 180px;
+    object-fit: cover;
+}
+.product-card-body { padding: 16px; }
+.product-card-body h3 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+.product-card-body p  { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; }
+.product-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px 16px;
+}
+.product-price { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
+
+/* ─── EMPTY STATE ─────────────────────────────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 4rem; margin-bottom: 16px; }
+.empty-state h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--text-dark); }
+
+/* ─── HAMBURGER MENU BUTTON (mobile only) ────────────────────────────────── */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+.hamburger:hover { background: var(--body-bg); }
+.hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--text-dark);
+    border-radius: 2px;
+    transition: all 0.3s;
+}
+
+/* Dark overlay behind sidebar on mobile */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    backdrop-filter: blur(2px);
+}
+.sidebar-overlay.show { display: block; }
+
+/* Scrollable table wrapper */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ─── RESPONSIVE (Mobile ≤ 768px) ───────────────────────────────────────── */
+@media (max-width: 768px) {
+    /* Sidebar: hidden off-screen, slides in when .open */
+    .sidebar {
+        transform: translateX(-100%);
+        z-index: 100;
+        transition: transform 0.3s ease;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    /* Main content takes full width */
+    .main-content { margin-left: 0; }
+
+    /* Show hamburger button */
+    .hamburger { display: flex; }
+
+    /* Stats: 2 columns on phone */
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+
+    /* Form rows stack on phone */
+    .form-row { grid-template-columns: 1fr; }
+
+    /* Less padding on phone */
+    .page-body { padding: 16px 12px; }
+
+    /* Topbar: compress */
+    .topbar { padding: 12px 16px; gap: 10px; }
+    .topbar-title h1 { font-size: 1.05rem; }
+    .topbar-title p  { display: none; }
+    .topbar-user .user-info { display: none; }
+
+    /* Table: hide less important cols on phone */
+    .hide-mobile { display: none !important; }
+
+    /* Stat cards: smaller text */
+    .stat-info h3 { font-size: 1.3rem; }
+    .stat-info p  { font-size: 0.72rem; }
+
+    /* Form card: full width */
+    .form-card { max-width: 100%; }
+}
+
+/* ─── RESPONSIVE (Tablet ≤ 1024px) ─────────────────────────────────────── */
+@media (max-width: 1024px) and (min-width: 769px) {
+    :root { --sidebar-width: 220px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .page-body { padding: 20px; }
+}

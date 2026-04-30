@@ -1,0 +1,923 @@
+/* ===== CSS RESET & GLOBAL STYLES ===== */
+/* This ensures consistency across different browsers inside all elements */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, sans-serif; /* Clean, geometric, modern rounded font */
+}
+
+h1, h2, h3 {
+    font-family: 'Playfair Display', serif; /* Elegant, bakery-style serif font for headings */
+}
+
+body {
+    background-color: #fff5e6; /* Cream / Beige background */
+    color: #5a2d2d; /* Chocolate Brown for text readability */
+}
+
+/* Container to keep content centered and nice on large screens */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    text-align: center;
+}
+
+/* ===== HEADER & NAVIGATION STYLES ===== */
+header {
+    background-color: rgba(255, 255, 255, 0.95); /* Slightly transparent white for a sleek look */
+    backdrop-filter: blur(10px); /* Frosted glass effect */
+    box-shadow: 0 4px 15px rgba(245, 198, 203, 0.3); /* Softer, broader pink shadow */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 50px; /* Reduced vertical padding for a modern, compact navbar */
+    position: sticky; /* Keep it at the top when scrolling */
+    top: 0;
+    z-index: 100; /* Ensure header stats above everything else */
+}
+
+/* Align the logo image and shop name horizontally */
+header .logo {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Space between logo and text */
+    cursor: pointer;
+}
+
+header .logo h1 {
+    color: #5a2d2d; /* Chocolate Brown */
+    font-size: 1.4rem; /* Slightly reduced to fit the longer name beautifully */
+    font-weight: 800;
+    letter-spacing: 0.5px; /* Slight letter spacing for elegance */
+    margin: 0;
+}
+
+header .logo img {
+    height: 55px; 
+    width: 55px; /* Force equal width and height */
+    border-radius: 50%; /* Make the image a perfect circle */
+    object-fit: cover; /* Assure the logo fills the frame without stretching */
+    background-color: #fff; /* Fallback incase logo has transparency */
+    box-shadow: 0 2px 8px rgba(245, 198, 203, 0.8); /* Beautiful subtle pink glow around the circle */
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+header .logo:hover img {
+    transform: scale(1.05) rotate(-3deg); /* Fun hover effect for the logo */
+}
+
+/* Navigation links layout */
+nav ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 30px; /* Control gap directly using flexbox rather than margins */
+}
+
+nav ul li {
+    margin: 0;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #5a2d2d;
+    font-weight: 600;
+    font-size: 1.05rem;
+    position: relative; /* Needed for the underline animation */
+    transition: color 0.3s;
+}
+
+/* Animated Hover Underline */
+nav ul li a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -5px;
+    left: 0;
+    background-color: #f5c6cb;
+    transition: width 0.3s ease;
+}
+
+nav ul li a:hover {
+    color: #5a2d2d; /* Keep it solid brown */
+}
+
+nav ul li a:hover::after {
+    width: 100%; /* Line grows across the word */
+    box-shadow: 0 0 8px rgba(245, 198, 203, 0.8); /* Glow effect on the line */
+}
+
+/* The Login Button in Header */
+.btn-login {
+    border: 2px solid #5a2d2d;
+    padding: 8px 24px !important; /* Make it wider and more pill-shaped */
+    border-radius: 25px !important; /* Fully rounded 'pill' button */
+    color: #5a2d2d !important;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-login::after {
+    display: none; /* remove hover line from login button */
+}
+
+.btn-login:hover {
+    background-color: #5a2d2d;
+    color: #fff5e6 !important;
+    box-shadow: 0 4px 15px rgba(245, 198, 203, 0.6); /* soft pink glow below button */
+    transform: translateY(-2px); /* Slight lift */
+}
+
+
+/* ===== HERO SECTION STYLES (IMAGE SLIDER) ===== */
+/* This is the large landing area that changes images */
+.hero {
+    position: relative;
+    height: 70vh; /* take up 70% of screen height */
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-color: #5a2d2d; /* dark background as fallback */
+}
+
+/* Each slide layer that holds background image and quoted text */
+.hero .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0; /* hidden by default */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    transition: opacity 1.5s ease-in-out; /* smooth crossfade */
+    z-index: 1;
+}
+
+.hero .slide.active {
+    opacity: 1; /* only the active slide is visible */
+}
+
+/* Add a dark overlay so the white text is readable over the images */
+.hero .slide::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5); /* 50% dark overlay */
+    z-index: -1; /* push overlay behind the text */
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2; /* keep text above the dark overlay */
+}
+
+/* Animated sliding-up headers and paragraphs */
+.hero-content h2 {
+    font-size: 3.5rem; /* Make heading large and readable */
+    margin-bottom: 20px;
+    text-shadow: 0px 2px 10px rgba(0,0,0,0.8);
+    transform: translateY(30px);
+    opacity: 0;
+    transition: all 1s ease-out 0.5s; /* animate slightly after slide appears */
+}
+
+.hero-content p {
+    font-size: 1.4rem;
+    margin-bottom: 30px;
+    font-style: italic; /* Makes it look more quote-like */
+    text-shadow: 0px 2px 5px rgba(0,0,0,0.8);
+    transform: translateY(30px);
+    opacity: 0;
+    transition: all 1s ease-out 0.8s; /* animate after the header */
+}
+
+/* Activate animations for the current slide */
+.hero .slide.active .hero-content h2,
+.hero .slide.active .hero-content p {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Floating call-to-action block at the bottom of the hero */
+.hero-cta {
+    position: absolute;
+    bottom: 12%; 
+    z-index: 10; /* Bring it above all slides forever */
+}
+
+/* The big "Find Nearby Stores" Button */
+.btn-primary {
+    background-color: #f5c6cb; /* Soft Pink */
+    color: #5a2d2d; /* Chocolate Brown Text */
+    font-weight: bold;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 25px; /* rounded corners */
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Add a glowing neon effect on hover */
+.btn-primary:hover {
+    background-color: #ffd8dc; /* Slightly lighter pink */
+    box-shadow: 0 0 15px #f5c6cb, 0 0 25px #f5c6cb; /* Neon pink glow */
+    transform: scale(1.05); /* Slight pop up */
+}
+
+/* A label showing the geolocation status */
+.location-status {
+    margin-top: 15px;
+    font-size: 1rem;
+    color: #ffd700; /* Distinct color to show it's updating */
+}
+
+/* ===== ABOUT SECTION ===== */
+.about {
+    padding: 80px 0;
+    background-color: #fff; /* Keep white for contrast from the cream body */
+}
+
+.about h2 {
+    color: #5a2d2d; /* Chocolate Brown */
+    margin-bottom: 20px;
+    text-shadow: 0px 1px 3px rgba(245, 198, 203, 0.4); /* faint pink glow on title */
+}
+
+.about p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #5a2d2d; /* Keep it readable Chocolate Brown */
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* ===== HOW IT WORKS SECTION (NEW) ===== */
+.how-it-works {
+    padding: 80px 0;
+    background-color: #fff5e6; /* Same beige as the body */
+    text-align: center;
+}
+
+.how-it-works h2 {
+    color: #5a2d2d;
+    margin-bottom: 50px;
+    font-size: 2.5rem;
+    position: relative;
+}
+
+.steps-grid {
+    display: flex;
+    justify-content: space-around;
+    gap: 30px;
+    max-width: 1000px;
+    margin: 0 auto;
+    flex-wrap: wrap; /* responsive layout */
+}
+
+.step-card {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid rgba(245, 198, 203, 0.4);
+    box-shadow: 0 4px 15px rgba(90, 45, 45, 0.05); /* soft shadow */
+    width: 30%;
+    min-width: 250px;
+    transition: transform 0.3s;
+}
+
+.step-card:hover {
+    transform: translateY(-8px);
+}
+
+.step-icon {
+    font-size: 3rem; /* Huge emoji/icon */
+    margin-bottom: 20px;
+    display: inline-block;
+    padding: 15px;
+    background-color: #fff5e6;
+    border-radius: 50%;
+    box-shadow: inset 0px 4px 10px rgba(0,0,0,0.05); /* inner shadow for depth */
+}
+
+.step-card h3 {
+    margin-bottom: 15px;
+    color: #5a2d2d;
+}
+
+.step-card p {
+    color: #8c5e5e;
+    line-height: 1.5;
+}
+
+/* ===== FEATURED CAKES SECTION ===== */
+.featured-cakes {
+    padding: 80px 0;
+    background-color: #fff5e6; /* Cream / Beige */
+}
+
+.featured-cakes h2 {
+    color: #5a2d2d; /* Chocolate Brown */
+    margin-bottom: 40px;
+    text-align: center;
+    text-shadow: 0px 1px 3px rgba(245, 198, 203, 0.4); /* faint pink glow */
+}
+
+/* Grid layout to align cake cards properly */
+.cake-grid {
+    display: flex;
+    justify-content: space-around;
+    gap: 30px;
+    flex-wrap: wrap; /* allow wrapping to next line on small screens */
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Individual Cake Card Design */
+.cake-card {
+    background-color: #fff;
+    border-radius: 12px;
+    overflow: hidden; /* clip the picture smoothly into the card */
+    box-shadow: 0 4px 15px rgba(90, 45, 45, 0.08); /* soft brown shadow */
+    border: 1px solid #f5c6cb; /* subtle pink border */
+    width: 30%;
+    min-width: 250px;
+    text-align: center;
+    padding-bottom: 20px;
+    transition: transform 0.3s, box-shadow 0.3s; /* allow the card to "pop" on hover */
+}
+
+/* Move card up and glowing neon pink shadow on hover */
+.cake-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 25px rgba(245, 198, 203, 0.8); /* Soft neon pink glow for the IoT touch */
+}
+
+.cake-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover; /* keeps image ratio looking good */
+}
+
+.cake-card h3 {
+    margin: 15px 0 10px;
+    color: #5a2d2d; /* Chocolate Brown */
+}
+
+.cake-card p {
+    color: #8c5e5e; /* lighter chocolate */
+    margin-bottom: 15px;
+    padding: 0 15px;
+}
+
+/* Cake Price Text */
+.cake-card .price {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #d4af37; /* Light gold highlight for price point */
+    text-shadow: 0px 1px 2px rgba(212, 175, 55, 0.4); /* slight gold glow */
+}
+
+/* ===== FOOTER STYLES (ENHANCED) ===== */
+footer {
+    background-color: #5a2d2d; /* Chocolate Brown for the footer */
+    color: #fff5e6; /* Cream color text */
+    padding: 50px 0 20px 0;
+    border-top: 3px solid #f5c6cb; /* Pink border dividing the site */
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px 30px;
+    gap: 30px;
+}
+
+.footer-box {
+    flex: 1;
+    min-width: 200px;
+}
+
+.footer-box h3 {
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    color: #f5c6cb; /* Important headers glow soft pink */
+}
+
+/* Make logo smaller in the footer */
+.footer-logo {
+    height: 70px;
+    margin-bottom: 20px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    padding: 5px;
+}
+
+.footer-box p {
+    color: #ffd8dc;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+/* Footer Link Styles */
+.footer-box ul {
+    list-style: none;
+}
+
+.footer-box ul li {
+    margin-bottom: 10px;
+}
+
+.footer-box ul li a {
+    color: #fff5e6;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.footer-box ul li a:hover {
+    color: #f5c6cb; /* Soft Pink Hover */
+}
+
+.footer-bottom {
+    text-align: center;
+    border-top: 1px solid rgba(245, 198, 203, 0.3);
+    padding-top: 20px;
+    font-size: 0.9rem;
+    color: #ffd8dc;
+}
+
+/* =========================================================================
+   LOGIN PAGE SPECIFIC STYLES 
+   (Keeps the pink/brown bakery theme but mimics the overlapping card layout)
+========================================================================= */
+
+.login-main {
+    position: relative;
+    width: 100%;
+    min-height: calc(100vh - 100px); /* Adjust based on header/footer */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff5e6;
+    padding: 60px 20px;
+}
+
+.login-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+}
+
+.login-card {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 440px;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 15px 35px rgba(90, 45, 45, 0.08); /* Softer, ambient shadow */
+    border: 1px solid rgba(245, 198, 203, 0.4); /* subtle pink boundary */
+    position: relative;
+}
+
+/* Very subtle background texture simulation */
+.login-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: #fffaf0; /* slightly warmer paper color */
+    opacity: 0.4;
+    border-radius: 12px;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.login-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.login-card-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.mini-logo {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 15px rgba(245, 198, 203, 0.6); /* Soft pink glow to match the theme */
+}
+
+.login-card-header h2 {
+    font-size: 1.8rem;
+    color: #5a2d2d;
+}
+
+.login-welcome {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.login-welcome h3 {
+    color: #8c5e5e;
+    font-size: 1.4rem;
+    margin-bottom: 5px;
+}
+
+.login-welcome p {
+    color: #5a2d2d;
+    font-size: 0.95rem;
+}
+
+.scallop-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    opacity: 0.6;
+}
+
+.scallop-divider .line {
+    height: 1px;
+    flex-grow: 1;
+    background-color: #d3c3c3;
+}
+
+.scallop-divider .cookie-icon {
+    font-size: 1rem;
+    color: #5a2d2d;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #5a2d2d;
+    letter-spacing: 1px;
+}
+
+/* Shared input styles */
+.form-group input {
+    width: 100%;
+    background-color: #fff9f2;
+    border: 1px solid #d3c3c3;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #5a2d2d;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #f5c6cb;
+    box-shadow: 0 0 0 2px rgba(245, 198, 203, 0.4);
+}
+
+.password-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.forgot-link {
+    font-size: 0.8rem;
+    color: #8c5e5e;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.forgot-link:hover {
+    color: #5a2d2d;
+}
+
+.input-wrap {
+    position: relative;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.social-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.social-divider .line {
+    height: 1px;
+    flex-grow: 1;
+    background-color: #e8e2d7;
+}
+
+.social-divider .text {
+    font-size: 0.75rem;
+    color: #817475;
+    letter-spacing: 1px;
+}
+
+.social-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-social {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background-color: #fff;
+    border: 1px solid #d3c3c3;
+    border-radius: 8px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.3s;
+    color: #5a2d2d;
+}
+
+.btn-social:hover {
+    background-color: #fff9f2;
+}
+
+.signup-wrap {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.signup-wrap p {
+    color: #5a2d2d;
+    font-size: 1rem;
+}
+
+.signup-wrap a {
+    color: #5a2d2d;
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 2px solid #f5c6cb;
+    padding-bottom: 2px;
+    transition: color 0.3s;
+}
+
+.signup-wrap a:hover {
+    color: #8c5e5e;
+}
+
+/* =========================================================================
+   DASHBOARD SPECIFIC STYLES 
+   (Keeps the bakery theme but adds sidebars, cards, and data tables)
+========================================================================= */
+
+.dashboard-body {
+    background-color: #fffaf0; /* Slightly cooler cream for working area */
+    color: #5a2d2d;
+}
+
+.dashboard-container {
+    display: flex;
+    max-width: 1200px;
+    margin: 40px auto;
+    gap: 30px;
+    padding: 0 20px;
+    min-height: calc(100vh - 200px);
+}
+
+/* Sidebar Styles */
+.dashboard-sidebar {
+    width: 250px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(90, 45, 45, 0.05);
+    border: 1px solid rgba(245, 198, 203, 0.4);
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-info {
+    text-align: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(90, 45, 45, 0.1);
+    margin-bottom: 20px;
+}
+
+.user-info .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #f5c6cb;
+    color: #5a2d2d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0 auto 15px;
+    box-shadow: 0 4px 15px rgba(245, 198, 203, 0.6);
+}
+
+.user-info h3 {
+    margin-bottom: 5px;
+}
+
+.user-info p {
+    font-size: 0.9rem;
+    color: #8c5e5e;
+}
+
+.user-info .loyalty {
+    margin-top: 10px;
+    color: #d4af37;
+    font-size: 0.85rem;
+}
+
+.sidebar-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar-links li a {
+    text-decoration: none;
+    color: #5a2d2d;
+    font-weight: 500;
+    display: block;
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.sidebar-links li a:hover,
+.sidebar-links li a.active {
+    background-color: #f5c6cb;
+    color: #5a2d2d;
+    box-shadow: 0 2px 10px rgba(245, 198, 203, 0.4);
+}
+
+/* Dashboard Content Area */
+.dashboard-content {
+    flex-grow: 1;
+    background-color: transparent;
+}
+
+.dashboard-header {
+    margin-bottom: 30px;
+}
+
+.dashboard-header h2 {
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+}
+
+.dashboard-header p {
+    color: #8c5e5e;
+}
+
+/* Stats Widgets */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 10px 25px rgba(90, 45, 45, 0.05);
+    border: 1px solid rgba(245, 198, 203, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.stat-card .icon {
+    font-size: 2.5rem;
+    background-color: #fffaf0;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    color: #5a2d2d;
+}
+
+.stat-card h4 {
+    font-size: 0.9rem;
+    color: #8c5e5e;
+    margin-bottom: 5px;
+}
+
+.stat-card p {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #5a2d2d;
+}
+
+/* Data Tables */
+.recent-orders {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 10px 25px rgba(90, 45, 45, 0.05);
+    border: 1px solid rgba(245, 198, 203, 0.4);
+}
+
+.recent-orders h3 {
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(90, 45, 45, 0.1);
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.orders-table th,
+.orders-table td {
+    padding: 15px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(90, 45, 45, 0.05);
+}
+
+.orders-table th {
+    font-weight: 600;
+    color: #8c5e5e;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.orders-table td {
+    color: #5a2d2d;
+}
+
+.status {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.status.completed {
+    background-color: #e6fced;
+    color: #2d5a37;
+}
+
+.status.pending {
+    background-color: #fff4e6;
+    color: #8a6327;
+}
+
+.dashboard-footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #5a2d2d;
+    color: #fff5e6;
+}

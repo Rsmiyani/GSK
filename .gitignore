@@ -1,0 +1,29 @@
+# ─── Sensitive / Security Files ─────────────────────────────────────────────
+# Delete these manually from server after use — do NOT commit them
+fix_passwords.php
+setup.php
+
+# ─── Database config (contains passwords) ────────────────────────────────────
+# OPTIONAL: uncomment if you store real credentials here
+# config/db.php
+
+# ─── XAMPP / Server Files ────────────────────────────────────────────────────
+.htaccess.bak
+
+# ─── OS Files ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE / Editor Files ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ─── PHP Error Logs ──────────────────────────────────────────────────────────
+*.log
+error_log
+
+# ─── Node (if added later) ───────────────────────────────────────────────────
+node_modules/
