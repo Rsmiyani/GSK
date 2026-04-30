@@ -246,7 +246,7 @@ $nextStatus = [
                             <?php foreach($orderItems[$o['id']] as $item): ?>
                             <div class="item-card">
                                 <?php if (!empty($item['image_url'])): ?>
-                                    <img src="../assets/product_images/<?= htmlspecialchars($item['image_url']) ?>" alt="img" class="item-image" loading="lazy">
+                                    <img src="<?= htmlspecialchars($item['image_url']) ?>" onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=80&q=60'" alt="img" class="item-image" loading="lazy">
                                 <?php else: ?>
                                     <div class="item-image" style="display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#9ca3af;">🎂</div>
                                 <?php endif; ?>
