@@ -237,6 +237,9 @@ if (!empty($productIdsWithVariants)) {
                     
                     <div class="p-5 flex-1 flex flex-col">
                         <h3 class="font-headline-sm text-lg text-amber-950 mb-2"><?= htmlspecialchars($product['name']) ?></h3>
+                        <?php if (!empty($product['flavor'])): ?>
+                            <p class="text-xs font-semibold text-secondary mb-2">Flavor: <?= htmlspecialchars($product['flavor']) ?></p>
+                        <?php endif; ?>
                         <p class="text-sm text-stone-500 mb-6 flex-1"><?= htmlspecialchars($product['description']) ?></p>
                         
                         <div class="flex flex-col mt-auto gap-4">

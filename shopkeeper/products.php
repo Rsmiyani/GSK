@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save') {
         $pid         = (int)($_POST['product_id'] ?? 0);
         $name        = trim($_POST['name']        ?? '');
+        $flavor      = trim($_POST['flavor']      ?? '');
         $description = trim($_POST['description'] ?? '');
         $price       = (float)($_POST['price']    ?? 0);
         $imageUrl    = trim($_POST['image_url']   ?? '');
@@ -54,12 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($name) || $price <= 0) {
             $message = 'error:Name and valid base price are required.';
         } elseif ($pid === 0) {
-            $s = mysqli_prepare($conn,"INSERT INTO products (shop_id,name,description,price,image_url,is_available,category_id,has_variants) VALUES (?,?,?,?,?,?,?,?)");
-            mysqli_stmt_bind_param($s,'issdsiii',$shopId,$name,$description,$price,$imageUrl,$available,$finalCatId,$hasVariants);
+            $s = mysqli_prepare($conn,"INSERT INTO products (shop_id,name,flavor,description,price,image_url,is_available,category_id,has_variants) VALUES (?,?,?,?,?,?,?,?,?)");
+            mysqli_stmt_bind_param($s,'isssdsiii',$shopId,$name,$flavor,$description,$price,$imageUrl,$available,$finalCatId,$hasVariants);
             mysqli_stmt_execute($s) ? $message='success:Item added!' : $message='error:Failed to add.';
         } else {
-            $s = mysqli_prepare($conn,"UPDATE products SET name=?,description=?,price=?,image_url=?,is_available=?,category_id=?,has_variants=? WHERE id=? AND shop_id=?");
-            mysqli_stmt_bind_param($s,'ssdsiiiii',$name,$description,$price,$imageUrl,$available,$finalCatId,$hasVariants,$pid,$shopId);
+            $s = mysqli_prepare($conn,"UPDATE products SET name=?,flavor=?,description=?,price=?,image_url=?,is_available=?,category_id=?,has_variants=? WHERE id=? AND shop_id=?");
+            mysqli_stmt_bind_param($s,'sssdsiiiii',$name,$flavor,$description,$price,$imageUrl,$available,$finalCatId,$hasVariants,$pid,$shopId);
             
             if (mysqli_stmt_execute($s)) {
                 $message='success:Item updated!';
@@ -167,12 +168,13 @@ $products = mysqli_query($conn,
                         <a href="add_product.php" class="btn btn-primary btn-sm">+ Add New</a>
                 </div>
                 <table class="data-table">
-                    <thead><tr><th>Img</th><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Img</th><th>Name</th><th>Flavor</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
                     <?php mysqli_data_seek($products,0); while($p=mysqli_fetch_assoc($products)): ?>
                     <tr>
                         <td><img src="<?=htmlspecialchars($p['image_url']?:'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=80&q=60')?>" style="width:48px;height:48px;object-fit:cover;border-radius:6px;" onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=80&q=60'"></td>
                         <td><strong><?=htmlspecialchars($p['name'])?></strong><div style="font-size:.73rem;color:var(--text-muted)"><?=htmlspecialchars(substr($p['description'],0,40))?>...</div></td>
+                        <td><?= htmlspecialchars($p['flavor'] ?: '—') ?></td>
                         <td><span style="font-size:.8rem;background:#eee;padding:2px 6px;border-radius:4px;"><?=htmlspecialchars($p['category_name']??'Uncategorized')?></span></td>
                         <td><strong>₹<?=number_format($p['price'],2)?></strong></td>
                         <td>
@@ -205,6 +207,8 @@ $products = mysqli_query($conn,
                         <input type="hidden" name="action" value="save">
                         <input type="hidden" name="product_id" value="<?=$editProduct['id']?>">
                         <div class="form-group"><label>Item Name *</label><input type="text" name="name" value="<?=htmlspecialchars($editProduct['name'])?>" placeholder="e.g. Chocolate Truffle" required></div>
+
+                        <div class="form-group"><label>Flavor</label><input type="text" name="flavor" value="<?=htmlspecialchars($editProduct['flavor'] ?? '')?>" placeholder="e.g. Chocolate, Mango, Vanilla"></div>
 
                         <div class="form-group">
                             <label>Category</label>

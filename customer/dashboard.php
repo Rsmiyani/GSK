@@ -306,6 +306,7 @@ $userInitial = strtoupper(substr($userName, 0, 1));
                             <div class="flex items-start justify-between gap-4">
                                 <div class="min-w-0">
                                     <h3 class="font-headline-sm text-xl text-amber-950 truncate"><?= htmlspecialchars($p['name']) ?></h3>
+                                    <?php if (!empty($p['flavor'])): ?><p class="text-xs font-semibold text-secondary mt-1 truncate">Flavor: <?= htmlspecialchars($p['flavor']) ?></p><?php endif; ?>
                                     <p class="text-sm text-stone-500 mt-1 truncate"><?= htmlspecialchars($shopLabel) ?></p>
                                 </div>
                                 <span class="shrink-0 font-headline-sm text-xl text-secondary">

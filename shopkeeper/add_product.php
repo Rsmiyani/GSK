@@ -19,6 +19,7 @@ $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name        = trim($_POST['name']        ?? '');
+    $flavor      = trim($_POST['flavor']      ?? '');
     $description = trim($_POST['description'] ?? '');
     $price       = (float)($_POST['price']    ?? 0);
     $imageUrl    = trim($_POST['image_url']   ?? '');
@@ -37,6 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    $finalCatId = $categoryId > 0 ? $categoryId : null;
+
     $hasVariants = isset($_POST['has_variants']) ? 1 : 0;
     
     // In has_variants mode, standard price is the 1kg price or 500g price if 1kg missing, or 0.
@@ -47,8 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($name) || $price <= 0) {
         $message = 'error:Name and valid base price are required.';
     } else {
-        $stmt = mysqli_prepare($conn, "INSERT INTO products (shop_id, name, description, price, image_url, is_available, category_id, has_variants) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        mysqli_stmt_bind_param($stmt, 'issdsiii', $shopId, $name, $description, $price, $imageUrl, $available, $finalCatId, $hasVariants);
+        $stmt = mysqli_prepare($conn, "INSERT INTO products (shop_id, name, flavor, description, price, image_url, is_available, category_id, has_variants) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        mysqli_stmt_bind_param($stmt, 'isssdsiii', $shopId, $name, $flavor, $description, $price, $imageUrl, $available, $finalCatId, $hasVariants);
 
         if (mysqli_stmt_execute($stmt)) {
             $newProductId = mysqli_insert_id($conn);
@@ -126,6 +129,8 @@ $categoriesList = mysqli_query($conn, "SELECT * FROM categories WHERE shop_id=$s
                 <h2>Product Details</h2>
                 <form method="POST">
                     <div class="form-group"><label>Item Name *</label><input type="text" name="name" placeholder="e.g. Chocolate Truffle" required></div>
+
+                    <div class="form-group"><label>Flavor</label><input type="text" name="flavor" placeholder="e.g. Chocolate, Mango, Vanilla"></div>
 
                     <div class="form-group">
                         <label>Category</label>

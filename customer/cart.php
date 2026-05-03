@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $cartItems = mysqli_query($conn,
-    "SELECT c.*, p.name, p.image_url, p.shop_id, s.name AS shop_name,
+    "SELECT c.*, p.name, p.flavor, p.image_url, p.shop_id, s.name AS shop_name,
             COALESCE(pv.price, p.price) as effective_price
      FROM cart c
      JOIN products p ON c.product_id = p.id
@@ -199,6 +199,9 @@ $shopId   = count($cartRows) > 0 ? $cartRows[0]['shop_id']   : 0;
                         <div class="flex-1">
                             <h3 class="font-headline-sm text-lg text-amber-950 mb-1">
                                 <?= htmlspecialchars($item['name']) ?>
+                                <?php if (!empty($item['flavor'])): ?>
+                                    <span class="text-xs font-semibold text-secondary bg-primary-container px-2 py-0.5 rounded ml-2"><?= htmlspecialchars($item['flavor']) ?></span>
+                                <?php endif; ?>
                                 <?php if($item['variant_weight']): ?>
                                     <span class="text-sm font-bold text-secondary bg-secondary-container px-2 py-0.5 rounded ml-2"><?= htmlspecialchars($item['variant_weight']) ?></span>
                                 <?php endif; ?>
@@ -248,6 +251,7 @@ $shopId   = count($cartRows) > 0 ? $cartRows[0]['shop_id']   : 0;
                             <div class="flex justify-between text-sm">
                                 <span class="text-stone-600 truncate mr-2 flex-1">
                                     <?= htmlspecialchars($item['name']) ?> 
+                                    <?= !empty($item['flavor']) ? '[' . htmlspecialchars($item['flavor']) . '] ' : '' ?>
                                     <?= $item['variant_weight'] ? "(".htmlspecialchars($item['variant_weight']).")" : "" ?>
                                     × <?= $item['quantity'] ?>
                                 </span>

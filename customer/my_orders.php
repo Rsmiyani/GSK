@@ -51,7 +51,7 @@ while ($row = mysqli_fetch_assoc($ordersRes)) { $orders[] = $row; }
 $orderItems = [];
 foreach ($orders as $order) {
     $itemsRes = mysqli_query($conn,
-        "SELECT oi.*, p.name AS product_name, p.image_url, oi.variant_weight
+        "SELECT oi.*, p.name AS product_name, p.flavor AS product_flavor, p.image_url, oi.variant_weight
          FROM order_items oi 
          JOIN products p ON oi.product_id = p.id
          WHERE oi.order_id = {$order['id']}"
@@ -362,6 +362,9 @@ foreach ($orders as $orderCountRow) {
                                 <div class="flex-1">
                                     <p class="font-bold text-amber-950 text-sm mb-1">
                                         <?= htmlspecialchars($item['product_name']) ?>
+                                        <?php if(!empty($item['product_flavor'])): ?>
+                                            <span class="text-[10px] font-bold text-secondary bg-primary-container px-1.5 py-0.5 rounded ml-1"><?= htmlspecialchars($item['product_flavor']) ?></span>
+                                        <?php endif; ?>
                                         <?php if($item['variant_weight']): ?>
                                             <span class="text-[10px] font-bold text-secondary bg-secondary-container px-1.5 py-0.5 rounded ml-1"><?= htmlspecialchars($item['variant_weight']) ?></span>
                                         <?php endif; ?>
