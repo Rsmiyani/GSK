@@ -1,207 +1,226 @@
+<?php
+/**
+ * signup.php
+ * =========
+ * PREMIUM SIGNUP PAGE - Split Layout with Hero-style Slider
+ */
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Ghanshyam Bakery and Live Cake Shop</title>
-    
-    <!-- Link to our external CSS file - controls how the page looks -->
-    <link rel="stylesheet" href="assets/css/style.css">
-    
-    <!-- Link to Google Fonts for elegant typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Sign Up - Ghanshyam Bakery & Live Cake Shop</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "surface-container-low": "#f5f3ee", "on-secondary-fixed-variant": "#643c35", "on-tertiary-fixed": "#400009", "surface-dim": "#dbdad4",
+              "primary-fixed": "#fbdbde", "tertiary": "#be0630", "background": "#fbf9f3", "primary-fixed-dim": "#debfc2", "error-container": "#ffdad6",
+              "secondary": "#7f534b", "surface": "#fbf9f3", "primary": "#70585b", "surface-container-high": "#eae8e2", "surface-variant": "#e4e2dd",
+              "surface-container-highest": "#e4e2dd", "inverse-surface": "#30312d", "primary-container": "#fadadd", "secondary-fixed": "#ffdad4",
+              "surface-bright": "#fbf9f3", "outline": "#807475", "surface-container": "#f0eee8", "on-primary": "#ffffff", "secondary-container": "#fec4ba",
+              "on-surface": "#1b1c19", "on-secondary": "#ffffff", "outline-variant": "#d2c3c4", "on-tertiary": "#ffffff", "on-background": "#1b1c19",
+              "surface-container-lowest": "#ffffff", "tertiary-fixed-dim": "#ffb3b3", "on-secondary-container": "#7a4f47", "inverse-primary": "#debfc2",
+              "on-primary-container": "#765e61", "surface-tint": "#70585b", "tertiary-container": "#ffd9d8", "on-primary-fixed": "#281719",
+              "on-surface-variant": "#4f4445", "on-tertiary-container": "#c61235", "on-error": "#ffffff", "secondary-fixed-dim": "#f2b9af",
+              "error": "#ba1a1a", "on-error-container": "#93000a", "on-tertiary-fixed-variant": "#920022", "on-primary-fixed-variant": "#574144",
+              "on-secondary-fixed": "#31120d", "inverse-on-surface": "#f2f1eb", "tertiary-fixed": "#ffdad9"
+            },
+            "fontFamily": {
+              "headline": ["Noto Serif", "serif"],
+              "sans": ["Plus Jakarta Sans", "sans-serif"]
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .slider-item { transition: opacity 1.5s ease-in-out; position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
+        .slider-item.active { opacity: 1; }
+        body, html { height: 100%; overflow: hidden; }
+        .hero-content h2 { transform: translateY(20px); opacity: 0; transition: all 1s ease-out 0.5s; }
+        .slider-item.active .hero-content h2 { transform: translateY(0); opacity: 1; }
+        .hero-content p { transform: translateY(20px); opacity: 0; transition: all 1s ease-out 0.8s; }
+        .slider-item.active .hero-content p { transform: translateY(0); opacity: 1; }
+        .error-placeholder { min-height: 44px; }
+    </style>
 </head>
-<body class="login-page">
+<body class="bg-surface font-sans text-on-surface antialiased">
 
-    <!-- HEADER SECTION -->
-    <header>
-        <div class="logo">
-            <a href="index.php" style="display:flex; align-items:center; gap:15px; text-decoration:none;">
-                <img src="assets/logo/image.png" alt="Ghanshyam Bakery Logo">
-                <h1>Ghanshyam Bakery & Live Cake Shop</h1>
-            </a>
+<!-- Floating Back Button -->
+<a href="index.php" class="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-2 bg-stone-100/80 backdrop-blur-md border border-stone-200 text-amber-950 rounded-full hover:bg-stone-200 transition-all group shadow-sm">
+    <span class="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+    <span class="text-sm font-bold tracking-wide">Back to Home</span>
+</a>
+
+<div class="flex h-screen w-full overflow-hidden">
+    <!-- Left Side: Image Slider -->
+    <div class="hidden lg:block relative w-1/2 h-full bg-stone-200 overflow-hidden">
+        <div id="imageSlider" class="absolute inset-0">
+            <!-- Slide 1 -->
+            <div class="slider-item absolute inset-0 active">
+                <img src="assets/login-page/4.jpg" class="w-full h-full object-cover" alt="Bakery 4">
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                    <div class="hero-content max-w-lg">
+                        <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Join Our Bakery<br>Family Today</h2>
+                        <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Register to experience the magic of freshly baked delights.”</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 2 -->
+            <div class="slider-item absolute inset-0">
+                <img src="assets/login-page/5.jpg" class="w-full h-full object-cover" alt="Bakery 5">
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                    <div class="hero-content max-w-lg">
+                        <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Pure Ingredients,<br>Pure Love</h2>
+                        <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Every member gets a front-row seat to our live baking show.”</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3 -->
+            <div class="slider-item absolute inset-0">
+                <img src="assets/login-page/6.jpg" class="w-full h-full object-cover" alt="Bakery 6">
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                    <div class="hero-content max-w-lg">
+                        <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">A Sweet Reward<br>in Every Bite</h2>
+                        <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Unlock exclusive flavors and faster checkout across all branches.”</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 4 -->
+            <div class="slider-item absolute inset-0">
+                <img src="assets/login-page/7.jpg" class="w-full h-full object-cover" alt="Bakery 7">
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                    <div class="hero-content max-w-lg">
+                        <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Your Daily Dose<br>of Happiness</h2>
+                        <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Where tradition meets modern taste in every artisanal creation.”</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <nav>
-            <ul>
-                <li><a href="index.php">Home</a></li>
-                <li><a href="about.php">About Us</a></li>
-                <li><a href="index.php#featured">Featured Cakes</a></li>
-            </ul>
-        </nav>
-    </header>
+    </div>
 
-    <!-- SIGNUP MAIN AREA -->
-    <main class="login-main">
-        <div class="login-content">
-            <div class="login-card">
-                
-                <!-- Card Header (Logo & Name) -->
-                <div class="login-card-header">
-                    <img src="assets/logo/image.png" alt="Bakery Symbol" class="mini-logo">
-                    <h2>Join Our Bakery</h2>
+    <!-- Right Side: Signup Form -->
+    <div class="w-full lg:w-1/2 h-full flex items-center justify-center p-8 sm:p-12 md:p-16 bg-background">
+        <div class="w-full max-w-lg space-y-6">
+            <div class="flex flex-col items-center lg:items-start">
+                <a href="index.php" class="flex items-center gap-3 mb-6">
+                    <img src="assets/logo/image.png" alt="Logo" class="w-10 h-10 object-contain">
+                    <span class="font-headline text-xl text-amber-950 font-bold">Ghanshyam Bakery</span>
+                </a>
+                <h2 class="font-headline text-3xl text-amber-950 mb-1">Create Account</h2>
+                <p class="text-stone-500">Become a member and start your sweet journey</p>
+            </div>
+
+            <div class="error-placeholder">
+                <?php if (isset($_GET['error'])): ?>
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl text-sm flex items-center gap-3">
+                        <span class="material-symbols-outlined text-[18px]">error</span>
+                        <?= htmlspecialchars($_GET['error']) ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <form action="signup_process.php" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label for="name" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Full Name</label>
+                    <input type="text" id="name" name="name" required 
+                           class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
+                           placeholder="John Doe">
                 </div>
 
-                <!-- Welcome Message -->
-                <div class="login-welcome">
-                    <h3>Create an Account</h3>
-                    <p>Register to order fresh live cakes for pickup or delivery.</p>
+                <div>
+                    <label for="phone" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required 
+                           class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
+                           placeholder="+91 00000 00000">
                 </div>
 
-                <!-- Input Form -->
-                <form action="signup_process.php" method="POST" class="auth-form">
-                    
-                    <!-- Full Name input -->
-                    <div class="form-group">
-                        <label for="name">FULL NAME</label>
-                        <input type="text" id="name" name="name" placeholder="John Doe" required>
-                    </div>
+                <div>
+                    <label for="email" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Email Address</label>
+                    <input type="email" id="email" name="email" required 
+                           class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
+                           placeholder="john@example.com">
+                </div>
 
-                    <!-- Phone input -->
-                    <div class="form-group">
-                        <label for="phone">PHONE NUMBER</label>
-                        <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required>
+                <div>
+                    <label for="password" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Password</label>
+                    <div class="relative">
+                        <input type="password" id="password" name="password" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
+                               placeholder="••••••••">
+                        <button type="button" onclick="togglePwd('password', 'eye1')" class="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-secondary">
+                            <span class="material-symbols-outlined text-[18px]" id="eye1">visibility</span>
+                        </button>
                     </div>
+                </div>
 
-                    <!-- Email input -->
-                    <div class="form-group">
-                        <label for="email">EMAIL ADDRESS</label>
-                        <input type="email" id="email" name="email" placeholder="bonjour@example.com" required>
+                <div>
+                    <label for="confirm_password" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Confirm Password</label>
+                    <div class="relative">
+                        <input type="password" id="confirm_password" name="confirm_password" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
+                               placeholder="••••••••">
+                        <button type="button" onclick="togglePwd('confirm_password', 'eye2')" class="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-secondary">
+                            <span class="material-symbols-outlined text-[18px]" id="eye2">visibility</span>
+                        </button>
                     </div>
+                </div>
 
-                    <!-- Password input -->
-                    <div class="form-group">
-                        <label for="password">PASSWORD</label>
-                        <div style="position:relative;">
-                            <input type="password" id="password" name="password"
-                                   placeholder="••••••••" required
-                                   style="padding-right:48px;">
-                            <button type="button"
-                                    id="togglePassword"
-                                    onclick="togglePassword('password','togglePassword')"
-                                    title="Show / hide password"
-                                    style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
-                                           border:none;background:none;cursor:pointer;padding:4px;
-                                           color:#aaa;line-height:1;transition:color .2s;">
-                                <svg id="eye-icon-password" xmlns="http://www.w3.org/2000/svg"
-                                     viewBox="0 0 24 24" width="20" height="20"
-                                     fill="none" stroke="currentColor"
-                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Confirm Password input -->
-                    <div class="form-group">
-                        <label for="confirm_password">CONFIRM PASSWORD</label>
-                        <div style="position:relative;">
-                            <input type="password" id="confirm_password" name="confirm_password"
-                                   placeholder="••••••••" required
-                                   style="padding-right:48px;">
-                            <button type="button"
-                                    id="toggleConfirm"
-                                    onclick="togglePassword('confirm_password','toggleConfirm')"
-                                    title="Show / hide password"
-                                    style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
-                                           border:none;background:none;cursor:pointer;padding:4px;
-                                           color:#aaa;line-height:1;transition:color .2s;">
-                                <svg id="eye-icon-confirm_password" xmlns="http://www.w3.org/2000/svg"
-                                     viewBox="0 0 24 24" width="20" height="20"
-                                     fill="none" stroke="currentColor"
-                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button type="submit" class="btn-primary flex-center">
-                        CREATE ACCOUNT 
+                <div class="md:col-span-2 py-2">
+                    <button type="submit" class="w-full bg-secondary text-white py-3.5 rounded-xl font-bold hover:bg-on-secondary-fixed-variant transition-colors shadow-lg shadow-secondary/20 flex items-center justify-center gap-2">
+                        CREATE ACCOUNT
+                        <span class="material-symbols-outlined text-[20px]">person_add</span>
                     </button>
-                </form>
-
-                <!-- Login Link -->
-                <div class="signup-wrap">
-                    <p>Already have an account? <a href="login.php">Sign In</a></p>
                 </div>
-            </div>
-        </div>
-    </main>
+            </form>
 
-    <!-- FOOTER SECTION -->
-    <footer id="contact">
-        <div class="footer-content">
-            <div class="footer-box">
-                <img src="assets/logo/image.png" alt="Ghanshyam Bakery" class="footer-logo">
-                <p>Bringing the finest, most delicious live cakes to multiple locations across the city.</p>
+            <div class="relative py-2">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-stone-200"></div></div>
+                <div class="relative flex justify-center text-[10px] uppercase"><span class="bg-background px-4 text-stone-400 font-bold tracking-widest">Already a member?</span></div>
             </div>
-            <div class="footer-box">
-                <h3>Quick Links</h3>
-                <ul>
-                    <li><a href="index.php">Home</a></li>
-                    <li><a href="about.php">About Us</a></li>
-                    <li><a href="index.php#featured">Featured Cakes</a></li>
-                    <li><a href="login.php">Store Login</a></li>
-                </ul>
-            </div>
-            <div class="footer-box">
-                <h3>Policies</h3>
-                <ul>
-                    <li><a href="terms.php">Terms & Conditions</a></li>
-                    <li><a href="privacy.php">Privacy Policy</a></li>
-                </ul>
-            </div>
-            <div class="footer-box">
-                <h3>Contact Us</h3>
-                <p>📞 +91 98765 43210</p>
-                <p>📧 order@ghanshyambakery.com</p>
-                <p>📍 Available at multiple live shop locations</p>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2026 Ghanshaym bakery and live cakeshop. All rights reserved.</p>
-        </div>
-    </footer>
 
+            <p class="text-center text-sm text-stone-500 pb-4">
+                <a href="login.php" class="font-bold text-secondary hover:underline">Sign In to Your Account</a>
+            </p>
+        </div>
+    </div>
+</div>
 
 <script>
-/**
- * togglePassword(inputId, btnId)
- * ================================
- * Switches any password field between visible text and hidden dots.
- * Swaps the eye SVG icon to show current state.
- * This same function works for BOTH the password and confirm-password fields.
- */
-function togglePassword(inputId, btnId) {
-    const input = document.getElementById(inputId);
-    const btn   = document.getElementById(btnId);
-    const icon  = document.getElementById('eye-icon-' + inputId);
+    // Image Slider Logic
+    const slides = document.querySelectorAll('.slider-item');
+    let currentSlide = 0;
 
-    if (input.type === 'password') {
-        input.type      = 'text';
-        btn.style.color = '#e91e8c'; // pink = active
-        // Switch to eye-slash (password is visible)
-        icon.innerHTML = `
-            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-            <line x1="1" y1="1" x2="23" y2="23"/>
-        `;
-    } else {
-        input.type      = 'password';
-        btn.style.color = '#aaa'; // grey = inactive
-        // Restore open eye (password is hidden)
-        icon.innerHTML = `
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-        `;
+    function nextSlide() {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('active');
     }
-}
+
+    setInterval(nextSlide, 5000);
+
+    // Toggle Password Visibility
+    function togglePwd(id, eyeId) {
+        const input = document.getElementById(id);
+        const icon = document.getElementById(eyeId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.textContent = 'visibility_off';
+        } else {
+            input.type = 'password';
+            icon.textContent = 'visibility';
+        }
+    }
 </script>
 
 </body>

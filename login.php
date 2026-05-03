@@ -1,218 +1,241 @@
+<?php
+/**
+ * login.php
+ * =========
+ * PREMIUM LOGIN PAGE - Split Layout with Image Slider
+ */
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Ghanshyam Bakery and Live Cake Shop</title>
-    
-    <!-- Link to our external CSS file - controls how the page looks -->
-    <link rel="stylesheet" href="assets/css/style.css">
-    
-    <!-- Link to Google Fonts for elegant typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Login - Ghanshyam Bakery & Live Cake Shop</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+              "surface-container-low": "#f5f3ee", "on-secondary-fixed-variant": "#643c35", "on-tertiary-fixed": "#400009", "surface-dim": "#dbdad4",
+              "primary-fixed": "#fbdbde", "tertiary": "#be0630", "background": "#fbf9f3", "primary-fixed-dim": "#debfc2", "error-container": "#ffdad6",
+              "secondary": "#7f534b", "surface": "#fbf9f3", "primary": "#70585b", "surface-container-high": "#eae8e2", "surface-variant": "#e4e2dd",
+              "surface-container-highest": "#e4e2dd", "inverse-surface": "#30312d", "primary-container": "#fadadd", "secondary-fixed": "#ffdad4",
+              "surface-bright": "#fbf9f3", "outline": "#807475", "surface-container": "#f0eee8", "on-primary": "#ffffff", "secondary-container": "#fec4ba",
+              "on-surface": "#1b1c19", "on-secondary": "#ffffff", "outline-variant": "#d2c3c4", "on-tertiary": "#ffffff", "on-background": "#1b1c19",
+              "surface-container-lowest": "#ffffff", "tertiary-fixed-dim": "#ffb3b3", "on-secondary-container": "#7a4f47", "inverse-primary": "#debfc2",
+              "on-primary-container": "#765e61", "surface-tint": "#70585b", "tertiary-container": "#ffd9d8", "on-primary-fixed": "#281719",
+              "on-surface-variant": "#4f4445", "on-tertiary-container": "#c61235", "on-error": "#ffffff", "secondary-fixed-dim": "#f2b9af",
+              "error": "#ba1a1a", "on-error-container": "#93000a", "on-tertiary-fixed-variant": "#920022", "on-primary-fixed-variant": "#574144",
+              "on-secondary-fixed": "#31120d", "inverse-on-surface": "#f2f1eb", "tertiary-fixed": "#ffdad9"
+            },
+            "fontFamily": {
+              "headline": ["Noto Serif", "serif"],
+              "sans": ["Plus Jakarta Sans", "sans-serif"]
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .slider-item { transition: opacity 1.5s ease-in-out; position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
+        .slider-item.active { opacity: 1; }
+        .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        body, html { height: 100%; overflow: hidden; }
+        .hero-content h2 { transform: translateY(20px); opacity: 0; transition: all 1s ease-out 0.5s; }
+        .slider-item.active .hero-content h2 { transform: translateY(0); opacity: 1; }
+        .hero-content p { transform: translateY(20px); opacity: 0; transition: all 1s ease-out 0.8s; }
+        .slider-item.active .hero-content p { transform: translateY(0); opacity: 1; }
+    </style>
 </head>
-<body class="login-page">
+<body class="bg-surface font-sans text-on-surface antialiased">
 
-    <!-- HEADER SECTION -->
-    <header>
-        <div class="logo">
-            <!-- Brand Name of your business -->
-            <a href="index.php" style="display:flex; align-items:center; gap:15px; text-decoration:none;">
-                <img src="assets/logo/image.png" alt="Ghanshyam Bakery Logo">
-                <h1>Ghanshyam Bakery & Live Cake Shop</h1>
-            </a>
+<!-- Floating Back Button -->
+<a href="index.php" class="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-2 bg-stone-100/80 backdrop-blur-md border border-stone-200 text-amber-950 rounded-full hover:bg-stone-200 transition-all group shadow-sm">
+    <span class="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+    <span class="text-sm font-bold tracking-wide">Back to Home</span>
+</a>
+
+<div class="flex h-screen w-full overflow-hidden">
+    <!-- Left Side: Image Slider -->
+    <div class="hidden lg:block relative w-1/2 h-full bg-stone-200 overflow-hidden">
+        <!-- Slides with Content -->
+        <div class="slider-item absolute inset-0 active">
+            <img src="assets/login-page/1.jpg" class="w-full h-full object-cover" alt="Bakery 1">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                <div class="hero-content max-w-lg">
+                    <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Artisanal Cakes,<br>Baked with Love</h2>
+                    <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Every bite tells a story of tradition and quality.”</p>
+                </div>
+            </div>
         </div>
-        <nav>
-            <ul>
-                <li><a href="index.php">Home</a></li>
-                <li><a href="about.php">About Us</a></li>
-                <li><a href="index.php#featured">Featured Cakes</a></li>
-            </ul>
-        </nav>
-    </header>
 
-    <!-- LOGIN HERO AREA -->
-    <main class="login-main">
-        <!-- Floating Card Container -->
-        <div class="login-content">
-            <div class="login-card">
-                
-                <!-- Card Header (Logo & Name) -->
-                <div class="login-card-header">
-                    <img src="assets/logo/image.png" alt="Bakery Symbol" class="mini-logo">
-                    <h2>Ghanshyam Bakery</h2>
+        <div class="slider-item absolute inset-0">
+            <img src="assets/login-page/2..jpg" class="w-full h-full object-cover" alt="Bakery 2">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                <div class="hero-content max-w-lg">
+                    <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Freshly Baked,<br>Daily Treats</h2>
+                    <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Experience the magic of live baking right before your eyes.”</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slider-item absolute inset-0">
+            <img src="assets/login-page/3.jpg" class="w-full h-full object-cover" alt="Bakery 3">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                <div class="hero-content max-w-lg">
+                    <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Celebrate Moments,<br>Big or Small</h2>
+                    <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Making your special occasions unforgettable with signature flavors.”</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slider-item absolute inset-0">
+            <img src="assets/login-page/4.jpg" class="w-full h-full object-cover" alt="Bakery 4">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                <div class="hero-content max-w-lg">
+                    <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">A Slice of<br>Pure Happiness</h2>
+                    <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Handcrafted with premium ingredients for the perfect taste.”</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slider-item absolute inset-0">
+            <img src="assets/login-page/5.jpg" class="w-full h-full object-cover" alt="Bakery 5">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                <div class="hero-content max-w-lg">
+                    <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">The Heart of<br>Our Kitchen</h2>
+                    <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Authentic recipes passed down through generations.”</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slider-item absolute inset-0">
+            <img src="assets/login-page/6.jpg" class="w-full h-full object-cover" alt="Bakery 6">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                <div class="hero-content max-w-lg">
+                    <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Excellence in<br>Every Crumb</h2>
+                    <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Quality you can trust, flavors you will always remember.”</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="slider-item absolute inset-0">
+            <img src="assets/login-page/7.jpg" class="w-full h-full object-cover" alt="Bakery 7">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
+                <div class="hero-content max-w-lg">
+                    <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Your Favorite<br>Sweet Corner</h2>
+                    <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Visit us and find your perfect slice of joy today.”</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: Login Form -->
+    <div class="w-full lg:w-1/2 h-full flex items-center justify-center p-8 sm:p-12 md:p-20 bg-background">
+        <div class="w-full max-w-md space-y-8">
+            <div class="flex flex-col items-center lg:items-start">
+                <a href="index.php" class="flex items-center gap-3 mb-8">
+                    <img src="assets/logo/image.png" alt="Logo" class="w-12 h-12 object-contain">
+                    <span class="font-headline text-2xl text-amber-950 font-bold">Ghanshyam Bakery</span>
+                </a>
+                <h2 class="font-headline text-3xl text-amber-950 mb-2">Welcome Back</h2>
+                <p class="text-stone-500">Sign in to your account to continue</p>
+            </div>
+
+            <?php if (isset($_GET['error'])): ?>
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3">
+                    <span class="material-symbols-outlined text-[18px]">error</span>
+                    <?= htmlspecialchars($_GET['error']) ?>
+                </div>
+            <?php endif; ?>
+
+            <form action="login_process.php" method="POST" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-bold text-amber-950 mb-2">EMAIL ADDRESS</label>
+                    <input type="email" id="email" name="email" required 
+                           class="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400"
+                           placeholder="your@email.com">
                 </div>
 
-                <!-- Welcome Message -->
-                <div class="login-welcome">
-                    <h3>Welcome Back</h3>
-                    <p>The scent of fresh cakes awaits you.</p>
-                </div>
-
-                <!-- Decorative Divider -->
-                <div class="scallop-divider">
-                    <span class="line"></span>
-                    <span class="cookie-icon">🎂</span>
-                    <span class="line"></span>
-                </div>
-
-                <!-- Input Form -->
-                <form action="login_process.php" method="POST" class="auth-form">
-                    
-                    <!-- Email input -->
-                    <div class="form-group">
-                        <label for="email">EMAIL ADDRESS</label>
-                        <input type="email" id="email" name="email" placeholder="bonjour@example.com" required>
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="password" class="block text-sm font-bold text-amber-950">PASSWORD</label>
+                        <a href="#" class="text-xs font-semibold text-secondary hover:underline">Forgot?</a>
                     </div>
-
-                    <!-- Password input -->
-                    <div class="form-group">
-                        <div class="password-top">
-                            <label for="password">PASSWORD</label>
-                            <a href="#" class="forgot-link">Forgot Password?</a>
-                        </div>
-                        <div class="input-wrap" style="position:relative;">
-                            <input type="password" id="password" name="password"
-                                   placeholder="••••••••" required
-                                   style="padding-right:48px;">
-                            <!-- Eye icon toggle: shows/hides the password -->
-                            <button type="button"
-                                    id="toggleLoginPwd"
-                                    onclick="togglePassword('password','toggleLoginPwd')"
-                                    title="Show / hide password"
-                                    style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
-                                           border:none;background:none;cursor:pointer;padding:4px;
-                                           color:#aaa;font-size:1.15rem;line-height:1;transition:color .2s;">
-                                <!-- Eye SVG (password hidden state) -->
-                                <svg id="eye-icon-password" xmlns="http://www.w3.org/2000/svg"
-                                     viewBox="0 0 24 24" width="20" height="20"
-                                     fill="none" stroke="currentColor"
-                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                            </button>
-                        </div>
+                    <div class="relative">
+                        <input type="password" id="password" name="password" required
+                               class="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400"
+                               placeholder="••••••••">
+                        <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-secondary">
+                            <span class="material-symbols-outlined text-[20px]" id="eyeIcon">visibility</span>
+                        </button>
                     </div>
-
-                    <!-- Submit Button uses the same Neon Pink theme -->
-                    <button type="submit" class="btn-primary flex-center">
-                        SIGN IN 
-                        <svg class="login-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                            <path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>
-                        </svg>
-                    </button>
-                </form>
-
-                <!-- Social Divider -->
-                <div class="social-divider">
-                    <span class="line"></span>
-                    <span class="text">OR CONTINUE WITH</span>
-                    <span class="line"></span>
                 </div>
 
-                <!-- Social Logins -->
-                <div class="social-buttons">
-                    <button type="button" class="btn-social">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
-                        </svg>
-                        Google
-                    </button>
-                    <button type="button" class="btn-social">
-                        <svg class="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24" width="20" height="20">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
-                        </svg>
-                        Facebook
-                    </button>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="remember" class="w-4 h-4 rounded border-stone-300 text-secondary focus:ring-secondary">
+                    <label for="remember" class="text-sm text-stone-600">Remember me for 30 days</label>
                 </div>
 
+                <button type="submit" class="w-full bg-secondary text-white py-4 rounded-xl font-bold hover:bg-on-secondary-fixed-variant transition-colors shadow-lg shadow-secondary/20 flex items-center justify-center gap-2">
+                    SIGN IN
+                    <span class="material-symbols-outlined text-[20px]">login</span>
+                </button>
+            </form>
+
+            <div class="relative py-4">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-stone-200"></div></div>
+                <div class="relative flex justify-center text-xs uppercase"><span class="bg-background px-4 text-stone-400 font-bold tracking-widest">Or login with</span></div>
             </div>
 
-            <!-- Sign Up Link -->
-            <div class="signup-wrap">
-                <p>New to our bakery? <a href="signup.php">Sign Up</a></p>
+            <div class="grid grid-cols-2 gap-4">
+                <button class="flex items-center justify-center gap-2 py-3 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                    <span class="text-sm font-semibold">Google</span>
+                </button>
+                <button class="flex items-center justify-center gap-2 py-3 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors">
+                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" class="w-5 h-5" alt="Facebook">
+                    <span class="text-sm font-semibold">Facebook</span>
+                </button>
             </div>
-        </div>
 
-    </main>
-
-    <!-- FOOTER SECTION (Enhanced with details) -->
-    <footer id="contact">
-        <div class="footer-content">
-            <div class="footer-box">
-                <img src="assets/logo/image.png" alt="Ghanshyam Bakery" class="footer-logo">
-                <p>Bringing the finest, most delicious live cakes to multiple locations across the city.</p>
-            </div>
-            <div class="footer-box">
-                <h3>Quick Links</h3>
-                <ul>
-                    <li><a href="index.php">Home</a></li>
-                    <li><a href="about.php">About Us</a></li>
-                    <li><a href="index.php#featured">Featured Cakes</a></li>
-                    <li><a href="login.php">Store Login</a></li>
-                </ul>
-            </div>
-            <div class="footer-box">
-                <h3>Policies</h3>
-                <ul>
-                    <li><a href="terms.php">Terms & Conditions</a></li>
-                    <li><a href="privacy.php">Privacy Policy</a></li>
-                </ul>
-            </div>
-            <div class="footer-box">
-                <h3>Contact Us</h3>
-                <p>📞 +91 98765 43210</p>
-                <p>📧 order@ghanshyambakery.com</p>
-                <p>📍 Available at multiple live shop locations</p>
-            </div>
+            <p class="text-center text-sm text-stone-500">
+                New to our bakery? 
+                <a href="signup.php" class="font-bold text-secondary hover:underline">Create an Account</a>
+            </p>
         </div>
-        <div class="footer-bottom">
-            <p>&copy; 2026 Ghanshaym bakery and live cakeshop. All rights reserved.</p>
-        </div>
-    </footer>
+    </div>
+</div>
 
 <script>
-/**
- * togglePassword(inputId, btnId)
- * ================================
- * Switches a password field between visible text and hidden dots.
- * Swaps the SVG eye icon to reflect the current state.
- *
- * @param {string} inputId - id of the <input> element
- * @param {string} btnId   - id of the toggle button
- */
-function togglePassword(inputId, btnId) {
-    const input = document.getElementById(inputId);
-    const btn   = document.getElementById(btnId);
-    const icon  = document.getElementById('eye-icon-' + inputId);
+    // Image Slider Logic
+    const slides = document.querySelectorAll('.slider-item');
+    let currentSlide = 0;
 
-    if (input.type === 'password') {
-        // Reveal password
-        input.type = 'text';
-        btn.style.color = '#e91e8c';
-        // Eye-slash icon (password is now visible)
-        icon.innerHTML = `
-            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-            <line x1="1" y1="1" x2="23" y2="23"/>
-        `;
-    } else {
-        // Hide password
-        input.type = 'password';
-        btn.style.color = '#aaa';
-        // Restore open-eye icon
-        icon.innerHTML = `
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-        `;
+    function nextSlide() {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('active');
     }
-}
+
+    setInterval(nextSlide, 5000);
+
+    // Toggle Password Visibility
+    function togglePassword() {
+        const input = document.getElementById('password');
+        const icon = document.getElementById('eyeIcon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.textContent = 'visibility_off';
+        } else {
+            input.type = 'password';
+            icon.textContent = 'visibility';
+        }
+    }
 </script>
 
 </body>
