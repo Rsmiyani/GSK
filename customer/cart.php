@@ -61,8 +61,8 @@ $gst = round($subtotal * 0.09, 2);
 $sgst = round($subtotal * 0.09, 2);
 $grandTotal = $subtotal + $gst + $sgst;
 
-$shopName = count($cartRows) > 0 ? $cartRows[0]['shop_name'] : '';
-$shopId   = count($cartRows) > 0 ? $cartRows[0]['shop_id']   : 0;
+    $shopName = count($cartRows) > 0 ? $cartRows[0]['shop_name'] : '';
+    $shopId   = count($cartRows) > 0 ? $cartRows[0]['shop_id']   : 0;
 ?>
 <!DOCTYPE html>
 <html class="light" lang="en">
