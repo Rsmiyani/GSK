@@ -2,7 +2,7 @@
 /**
  * signup.php
  * =========
- * PREMIUM SIGNUP PAGE - Split Layout with Hero-style Slider
+ * PREMIUM SIGNUP PAGE - Precise Layout for Maximum Screen Fit
  */
 ?>
 <!DOCTYPE html>
@@ -48,61 +48,48 @@
         .slider-item.active .hero-content h2 { transform: translateY(0); opacity: 1; }
         .hero-content p { transform: translateY(20px); opacity: 0; transition: all 1s ease-out 0.8s; }
         .slider-item.active .hero-content p { transform: translateY(0); opacity: 1; }
-        .error-placeholder { min-height: 44px; }
+        .error-placeholder { min-height: 38px; }
     </style>
 </head>
 <body class="bg-surface font-sans text-on-surface antialiased">
 
 <!-- Floating Back Button -->
-<a href="index.php" class="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-2 bg-stone-100/80 backdrop-blur-md border border-stone-200 text-amber-950 rounded-full hover:bg-stone-200 transition-all group shadow-sm">
+<a href="index.php" class="fixed top-8 right-8 z-50 flex items-center gap-2 px-5 py-2.5 bg-stone-100/90 backdrop-blur-lg border border-stone-200 text-amber-950 rounded-full hover:bg-stone-200 hover:shadow-md transition-all group shadow-sm">
     <span class="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
-    <span class="text-sm font-bold tracking-wide">Back to Home</span>
+    <span class="text-sm font-bold tracking-tight">Back to Home</span>
 </a>
 
 <div class="flex h-screen w-full overflow-hidden">
     <!-- Left Side: Image Slider -->
-    <div class="hidden lg:block relative w-1/2 h-full bg-stone-200 overflow-hidden">
+    <div class="hidden lg:block relative w-7/12 h-full bg-stone-200 overflow-hidden">
         <div id="imageSlider" class="absolute inset-0">
             <!-- Slide 1 -->
             <div class="slider-item absolute inset-0 active">
                 <img src="assets/login-page/4.jpg" class="w-full h-full object-cover" alt="Bakery 4">
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
-                    <div class="hero-content max-w-lg">
-                        <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Join Our Bakery<br>Family Today</h2>
-                        <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Register to experience the magic of freshly baked delights.”</p>
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-16">
+                    <div class="hero-content max-w-xl">
+                        <h2 class="font-headline text-5xl md:text-6xl text-white mb-6 drop-shadow-2xl">Join Our Bakery<br>Family Today</h2>
+                        <p class="text-white/90 text-xl md:text-2xl italic font-medium drop-shadow-lg">“Register to experience the magic of freshly baked delights.”</p>
                     </div>
                 </div>
             </div>
-
             <!-- Slide 2 -->
             <div class="slider-item absolute inset-0">
                 <img src="assets/login-page/5.jpg" class="w-full h-full object-cover" alt="Bakery 5">
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
-                    <div class="hero-content max-w-lg">
-                        <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Pure Ingredients,<br>Pure Love</h2>
-                        <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Every member gets a front-row seat to our live baking show.”</p>
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-16">
+                    <div class="hero-content max-w-xl">
+                        <h2 class="font-headline text-5xl md:text-6xl text-white mb-6 drop-shadow-2xl">Pure Ingredients,<br>Pure Love</h2>
+                        <p class="text-white/90 text-xl md:text-2xl italic font-medium drop-shadow-lg">“Every member gets a front-row seat to our live baking show.”</p>
                     </div>
                 </div>
             </div>
-
             <!-- Slide 3 -->
             <div class="slider-item absolute inset-0">
                 <img src="assets/login-page/6.jpg" class="w-full h-full object-cover" alt="Bakery 6">
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
-                    <div class="hero-content max-w-lg">
-                        <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">A Sweet Reward<br>in Every Bite</h2>
-                        <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Unlock exclusive flavors and faster checkout across all branches.”</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Slide 4 -->
-            <div class="slider-item absolute inset-0">
-                <img src="assets/login-page/7.jpg" class="w-full h-full object-cover" alt="Bakery 7">
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
-                    <div class="hero-content max-w-lg">
-                        <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Your Daily Dose<br>of Happiness</h2>
-                        <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Where tradition meets modern taste in every artisanal creation.”</p>
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-16">
+                    <div class="hero-content max-w-xl">
+                        <h2 class="font-headline text-5xl md:text-6xl text-white mb-6 drop-shadow-2xl">A Sweet Reward<br>in Every Bite</h2>
+                        <p class="text-white/90 text-xl md:text-2xl italic font-medium drop-shadow-lg">“Unlock exclusive flavors and faster checkout across all branches.”</p>
                     </div>
                 </div>
             </div>
@@ -110,50 +97,50 @@
     </div>
 
     <!-- Right Side: Signup Form -->
-    <div class="w-full lg:w-1/2 h-full flex items-center justify-center p-8 sm:p-12 md:p-16 bg-background">
-        <div class="w-full max-w-lg space-y-6">
+    <div class="w-full lg:w-5/12 h-full flex items-center justify-center p-6 sm:p-12 bg-background relative z-10">
+        <div class="w-full max-w-md space-y-5">
             <div class="flex flex-col items-center lg:items-start">
-                <a href="index.php" class="flex items-center gap-3 mb-6">
+                <a href="index.php" class="flex items-center gap-3 mb-5">
                     <img src="assets/logo/image.png" alt="Logo" class="w-10 h-10 object-contain">
-                    <span class="font-headline text-xl text-amber-950 font-bold">Ghanshyam Bakery</span>
+                    <span class="font-headline text-xl text-amber-950 font-bold tracking-tight">Ghanshyam Bakery</span>
                 </a>
-                <h2 class="font-headline text-3xl text-amber-950 mb-1">Create Account</h2>
-                <p class="text-stone-500">Become a member and start your sweet journey</p>
+                <h2 class="font-headline text-3xl text-amber-950 mb-0.5">Create Account</h2>
+                <p class="text-stone-500 text-sm">Become a member and start your journey</p>
             </div>
 
             <div class="error-placeholder">
                 <?php if (isset($_GET['error'])): ?>
-                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl text-sm flex items-center gap-3">
-                        <span class="material-symbols-outlined text-[18px]">error</span>
+                    <div class="bg-red-50 border border-red-100 text-red-700 px-4 py-2.5 rounded-xl text-xs flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[16px]">error</span>
                         <?= htmlspecialchars($_GET['error']) ?>
                     </div>
                 <?php endif; ?>
             </div>
 
-            <form action="signup_process.php" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form action="signup_process.php" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3.5">
                 <div class="md:col-span-2">
-                    <label for="name" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Full Name</label>
+                    <label for="name" class="block text-[10px] font-bold text-amber-950 mb-1.5 uppercase tracking-widest">Full Name</label>
                     <input type="text" id="name" name="name" required 
                            class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
                            placeholder="John Doe">
                 </div>
 
                 <div>
-                    <label for="phone" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Phone Number</label>
+                    <label for="phone" class="block text-[10px] font-bold text-amber-950 mb-1.5 uppercase tracking-widest">Phone</label>
                     <input type="tel" id="phone" name="phone" required 
                            class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
                            placeholder="+91 00000 00000">
                 </div>
 
                 <div>
-                    <label for="email" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Email Address</label>
+                    <label for="email" class="block text-[10px] font-bold text-amber-950 mb-1.5 uppercase tracking-widest">Email</label>
                     <input type="email" id="email" name="email" required 
                            class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
                            placeholder="john@example.com">
                 </div>
 
                 <div>
-                    <label for="password" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Password</label>
+                    <label for="password" class="block text-[10px] font-bold text-amber-950 mb-1.5 uppercase tracking-widest">Password</label>
                     <div class="relative">
                         <input type="password" id="password" name="password" required
                                class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
@@ -165,7 +152,7 @@
                 </div>
 
                 <div>
-                    <label for="confirm_password" class="block text-xs font-bold text-amber-950 mb-1.5 uppercase tracking-wider">Confirm Password</label>
+                    <label for="confirm_password" class="block text-[10px] font-bold text-amber-950 mb-1.5 uppercase tracking-widest">Confirm</label>
                     <div class="relative">
                         <input type="password" id="confirm_password" name="confirm_password" required
                                class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
@@ -176,8 +163,8 @@
                     </div>
                 </div>
 
-                <div class="md:col-span-2 py-2">
-                    <button type="submit" class="w-full bg-secondary text-white py-3.5 rounded-xl font-bold hover:bg-on-secondary-fixed-variant transition-colors shadow-lg shadow-secondary/20 flex items-center justify-center gap-2">
+                <div class="md:col-span-2 pt-2">
+                    <button type="submit" class="w-full bg-secondary text-white py-3.5 rounded-xl font-bold hover:bg-on-secondary-fixed-variant transition-all shadow-lg shadow-secondary/10 flex items-center justify-center gap-2 text-sm tracking-wide">
                         CREATE ACCOUNT
                         <span class="material-symbols-outlined text-[20px]">person_add</span>
                     </button>
@@ -186,10 +173,10 @@
 
             <div class="relative py-2">
                 <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-stone-200"></div></div>
-                <div class="relative flex justify-center text-[10px] uppercase"><span class="bg-background px-4 text-stone-400 font-bold tracking-widest">Already a member?</span></div>
+                <div class="relative flex justify-center text-[10px] uppercase"><span class="bg-background px-4 text-stone-400 font-bold tracking-[0.2em]">Already a member?</span></div>
             </div>
 
-            <p class="text-center text-sm text-stone-500 pb-4">
+            <p class="text-center text-xs text-stone-500">
                 <a href="login.php" class="font-bold text-secondary hover:underline">Sign In to Your Account</a>
             </p>
         </div>

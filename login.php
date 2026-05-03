@@ -54,21 +54,21 @@
 <body class="bg-surface font-sans text-on-surface antialiased">
 
 <!-- Floating Back Button -->
-<a href="index.php" class="fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-2 bg-stone-100/80 backdrop-blur-md border border-stone-200 text-amber-950 rounded-full hover:bg-stone-200 transition-all group shadow-sm">
+<a href="index.php" class="fixed top-8 right-8 z-50 flex items-center gap-2 px-5 py-2.5 bg-stone-100/90 backdrop-blur-lg border border-stone-200 text-amber-950 rounded-full hover:bg-stone-200 hover:shadow-md transition-all group shadow-sm">
     <span class="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
-    <span class="text-sm font-bold tracking-wide">Back to Home</span>
+    <span class="text-sm font-bold tracking-tight">Back to Home</span>
 </a>
 
 <div class="flex h-screen w-full overflow-hidden">
     <!-- Left Side: Image Slider -->
-    <div class="hidden lg:block relative w-1/2 h-full bg-stone-200 overflow-hidden">
+    <div class="hidden lg:block relative w-7/12 h-full bg-stone-200 overflow-hidden">
         <!-- Slides with Content -->
         <div class="slider-item absolute inset-0 active">
             <img src="assets/login-page/1.jpg" class="w-full h-full object-cover" alt="Bakery 1">
-            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-12">
-                <div class="hero-content max-w-lg">
-                    <h2 class="font-headline text-4xl md:text-5xl text-white mb-6 drop-shadow-lg">Artisanal Cakes,<br>Baked with Love</h2>
-                    <p class="text-white/90 text-lg md:text-xl italic font-medium drop-shadow-md">“Every bite tells a story of tradition and quality.”</p>
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-center p-16">
+                <div class="hero-content max-w-xl">
+                    <h2 class="font-headline text-5xl md:text-6xl text-white mb-6 drop-shadow-2xl">Artisanal Cakes,<br>Baked with Love</h2>
+                    <p class="text-white/90 text-xl md:text-2xl italic font-medium drop-shadow-lg">“Every bite tells a story of tradition and quality.”</p>
                 </div>
             </div>
         </div>
@@ -135,77 +135,77 @@
     </div>
 
     <!-- Right Side: Login Form -->
-    <div class="w-full lg:w-1/2 h-full flex items-center justify-center p-8 sm:p-12 md:p-20 bg-background">
-        <div class="w-full max-w-md space-y-8">
+    <div class="w-full lg:w-5/12 h-full flex items-center justify-center p-6 sm:p-12 bg-background relative z-10">
+        <div class="w-full max-w-sm space-y-6">
             <div class="flex flex-col items-center lg:items-start">
-                <a href="index.php" class="flex items-center gap-3 mb-8">
-                    <img src="assets/logo/image.png" alt="Logo" class="w-12 h-12 object-contain">
-                    <span class="font-headline text-2xl text-amber-950 font-bold">Ghanshyam Bakery</span>
+                <a href="index.php" class="flex items-center gap-3 mb-6">
+                    <img src="assets/logo/image.png" alt="Logo" class="w-10 h-10 object-contain">
+                    <span class="font-headline text-xl text-amber-950 font-bold tracking-tight">Ghanshyam Bakery</span>
                 </a>
-                <h2 class="font-headline text-3xl text-amber-950 mb-2">Welcome Back</h2>
-                <p class="text-stone-500">Sign in to your account to continue</p>
+                <h2 class="font-headline text-3xl text-amber-950 mb-1">Welcome Back</h2>
+                <p class="text-stone-500 text-sm">Sign in to your account to continue</p>
             </div>
 
             <?php if (isset($_GET['error'])): ?>
-                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3">
-                    <span class="material-symbols-outlined text-[18px]">error</span>
+                <div class="bg-red-50 border border-red-100 text-red-700 px-4 py-2.5 rounded-xl text-xs flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[16px]">error</span>
                     <?= htmlspecialchars($_GET['error']) ?>
                 </div>
             <?php endif; ?>
 
-            <form action="login_process.php" method="POST" class="space-y-6">
+            <form action="login_process.php" method="POST" class="space-y-4">
                 <div>
-                    <label for="email" class="block text-sm font-bold text-amber-950 mb-2">EMAIL ADDRESS</label>
+                    <label for="email" class="block text-[10px] font-bold text-amber-950 mb-1.5 uppercase tracking-widest">Email Address</label>
                     <input type="email" id="email" name="email" required 
-                           class="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400"
+                           class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
                            placeholder="your@email.com">
                 </div>
 
                 <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <label for="password" class="block text-sm font-bold text-amber-950">PASSWORD</label>
-                        <a href="#" class="text-xs font-semibold text-secondary hover:underline">Forgot?</a>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label for="password" class="block text-[10px] font-bold text-amber-950 uppercase tracking-widest">Password</label>
+                        <a href="#" class="text-[10px] font-bold text-secondary hover:underline uppercase tracking-widest">Forgot?</a>
                     </div>
                     <div class="relative">
                         <input type="password" id="password" name="password" required
-                               class="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400"
+                               class="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-secondary/20 focus:border-secondary outline-none transition-all placeholder:text-stone-400 text-sm"
                                placeholder="••••••••">
                         <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-secondary">
-                            <span class="material-symbols-outlined text-[20px]" id="eyeIcon">visibility</span>
+                            <span class="material-symbols-outlined text-[18px]" id="eyeIcon">visibility</span>
                         </button>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <input type="checkbox" id="remember" class="w-4 h-4 rounded border-stone-300 text-secondary focus:ring-secondary">
-                    <label for="remember" class="text-sm text-stone-600">Remember me for 30 days</label>
+                    <input type="checkbox" id="remember" class="w-3.5 h-3.5 rounded border-stone-300 text-secondary focus:ring-secondary">
+                    <label for="remember" class="text-xs text-stone-500 font-medium">Keep me signed in</label>
                 </div>
 
-                <button type="submit" class="w-full bg-secondary text-white py-4 rounded-xl font-bold hover:bg-on-secondary-fixed-variant transition-colors shadow-lg shadow-secondary/20 flex items-center justify-center gap-2">
+                <button type="submit" class="w-full bg-secondary text-white py-3.5 rounded-xl font-bold hover:bg-on-secondary-fixed-variant transition-all shadow-lg shadow-secondary/10 flex items-center justify-center gap-2 text-sm tracking-wide">
                     SIGN IN
-                    <span class="material-symbols-outlined text-[20px]">login</span>
+                    <span class="material-symbols-outlined text-[18px]">login</span>
                 </button>
             </form>
 
-            <div class="relative py-4">
+            <div class="relative py-2">
                 <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-stone-200"></div></div>
-                <div class="relative flex justify-center text-xs uppercase"><span class="bg-background px-4 text-stone-400 font-bold tracking-widest">Or login with</span></div>
+                <div class="relative flex justify-center text-[10px] uppercase"><span class="bg-background px-4 text-stone-400 font-bold tracking-[0.2em]">Social Login</span></div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <button class="flex items-center justify-center gap-2 py-3 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
-                    <span class="text-sm font-semibold">Google</span>
+            <div class="grid grid-cols-2 gap-3">
+                <button class="flex items-center justify-center gap-2 py-2.5 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors shadow-sm">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-4 h-4" alt="Google">
+                    <span class="text-xs font-bold text-stone-600">Google</span>
                 </button>
-                <button class="flex items-center justify-center gap-2 py-3 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors">
-                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" class="w-5 h-5" alt="Facebook">
-                    <span class="text-sm font-semibold">Facebook</span>
+                <button class="flex items-center justify-center gap-2 py-2.5 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors shadow-sm">
+                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" class="w-4 h-4" alt="Facebook">
+                    <span class="text-xs font-bold text-stone-600">Facebook</span>
                 </button>
             </div>
 
-            <p class="text-center text-sm text-stone-500">
-                New to our bakery? 
-                <a href="signup.php" class="font-bold text-secondary hover:underline">Create an Account</a>
+            <p class="text-center text-xs text-stone-500">
+                Don't have an account? 
+                <a href="signup.php" class="font-bold text-secondary hover:underline">Create Account</a>
             </p>
         </div>
     </div>

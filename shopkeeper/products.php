@@ -130,6 +130,7 @@ $products = mysqli_query($conn,
 <link rel="stylesheet" href="../assets/css/dashboard.css">
 <style>
 .page-grid{display:grid;grid-template-columns:1fr 360px;gap:24px;}
+.table-card { min-width: 0; overflow-x: auto; } /* Prevent grid blowout */
 .img-preview{width:100%;height:110px;object-fit:cover;border-radius:8px;margin-top:8px;display:none;}
 @media(max-width:900px){.page-grid{grid-template-columns:1fr;}}
 </style>
@@ -167,6 +168,7 @@ $products = mysqli_query($conn,
                     <h2>All Items (<?= mysqli_num_rows($products) ?>)</h2>
                         <a href="add_product.php" class="btn btn-primary btn-sm">+ Add New</a>
                 </div>
+                <div class="table-responsive">
                 <table class="data-table">
                     <thead><tr><th>Img</th><th>Name</th><th>Flavor</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
@@ -198,6 +200,7 @@ $products = mysqli_query($conn,
                     <?php endwhile;?>
                     </tbody>
                 </table>
+                </div>
             </div>
             <!-- Add/Edit Panel -->
             <div class="form-card">
