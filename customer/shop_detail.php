@@ -2,41 +2,40 @@
 /**
  * customer/shop_detail.php
  * ========================
- * SHOP DETAIL / CAKE CATALOG PAGE
- *
- * Shows all cakes available at a specific shop.
- * Customers can add items to their cart from here.
- *
- * URL: shop_detail.php?shop_id=1
+ * SHOP DETAIL / CAKE CATALOG PAGE - Sweet Artisans Theme
  */
 
 $required_role = 'customer';
 require_once '../includes/auth_check.php';
 require_once '../config/db.php';
 
+$userId = $_SESSION['user_id'];
+$userName = $_SESSION['user_name'];
+$userInitial = strtoupper(substr($userName, 0, 1));
+
 // ─── Get Shop ID from URL ─────────────────────────────────────────────────────
-// ?shop_id=1 is passed in the URL from the shops listing page
 $shopId = isset($_GET['shop_id']) ? (int)$_GET['shop_id'] : 0;
+if ($shopId === 0) {
+    // some links use id instead of shop_id
+    $shopId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+}
 
 if ($shopId === 0) {
     header("Location: shops.php");
     exit();
 }
 
-// ─── Fetch Shop Details ───────────────────────────────────────────────────────
 $shopStmt = mysqli_prepare($conn, "SELECT * FROM shops WHERE id = ? AND is_active = 1");
 mysqli_stmt_bind_param($shopStmt, 'i', $shopId);
 mysqli_stmt_execute($shopStmt);
 $shopResult = mysqli_stmt_get_result($shopStmt);
 $shop = mysqli_fetch_assoc($shopResult);
 
-// If shop not found, redirect back
 if (!$shop) {
     header("Location: shops.php?error=Shop+not+found");
     exit();
 }
 
-// ─── Fetch Products (Cakes) for This Shop ────────────────────────────────────
 $productsResult = mysqli_query($conn,
     "SELECT p.*, c.name AS category_name 
      FROM products p 
@@ -47,32 +46,73 @@ $productsResult = mysqli_query($conn,
 
 $products = [];
 $categories = [];
+$productIdsWithVariants = [];
+
 while ($row = mysqli_fetch_assoc($productsResult)) {
     $cat = $row['category_name'] ?? 'Uncategorized';
     if (!in_array($cat, $categories)) {
         $categories[] = $cat;
     }
     $row['category_name'] = $cat;
-    $products[] = $row;
+    $row['variants'] = [];
+    if ($row['has_variants']) {
+        $productIdsWithVariants[] = $row['id'];
+    }
+    $products[$row['id']] = $row;
 }
 
-// ─── Success/Error Messages ───────────────────────────────────────────────────
-$msg = $_GET['msg'] ?? '';
+if (!empty($productIdsWithVariants)) {
+    $idList = implode(',', $productIdsWithVariants);
+    $varRes = mysqli_query($conn, "SELECT * FROM product_variants WHERE product_id IN ($idList) ORDER BY CASE weight_label WHEN '500g' THEN 1 WHEN '1kg' THEN 2 WHEN '2kg' THEN 3 WHEN '3kg' THEN 4 WHEN '4kg' THEN 5 WHEN '5kg' THEN 6 WHEN '6kg' THEN 7 ELSE 8 END");
+    while ($v = mysqli_fetch_assoc($varRes)) {
+        $products[$v['product_id']]['variants'][] = $v;
+    }
+}
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($shop['name']) ?> - Ghanshyam Bakery</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title><?= htmlspecialchars($shop['name']) ?> - Ghanshyam Bakery &amp; Live Cake Shop</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f5f3ee", "on-secondary-fixed-variant": "#643c35", "on-tertiary-fixed": "#400009", "surface-dim": "#dbdad4",
+                    "primary-fixed": "#fbdbde", "tertiary": "#be0630", "background": "#fbf9f3", "primary-fixed-dim": "#debfc2", "error-container": "#ffdad6",
+                    "secondary": "#7f534b", "surface": "#fbf9f3", "primary": "#70585b", "surface-container-high": "#eae8e2", "surface-variant": "#e4e2dd",
+                    "surface-container-highest": "#e4e2dd", "inverse-surface": "#30312d", "primary-container": "#fadadd", "secondary-fixed": "#ffdad4",
+                    "surface-bright": "#fbf9f3", "outline": "#807475", "surface-container": "#f0eee8", "on-primary": "#ffffff", "secondary-container": "#fec4ba",
+                    "on-surface": "#1b1c19", "on-secondary": "#ffffff", "outline-variant": "#d2c3c4", "on-tertiary": "#ffffff", "on-background": "#1b1c19",
+                    "surface-container-lowest": "#ffffff", "tertiary-fixed-dim": "#ffb3b3", "on-secondary-container": "#7a4f47", "inverse-primary": "#debfc2",
+                    "on-primary-container": "#765e61", "surface-tint": "#70585b", "tertiary-container": "#ffd9d8", "on-primary-fixed": "#281719",
+                    "on-surface-variant": "#4f4445", "on-tertiary-container": "#c61235", "on-error": "#ffffff", "secondary-fixed-dim": "#f2b9af",
+                    "error": "#ba1a1a", "on-error-container": "#93000a", "on-tertiary-fixed-variant": "#920022", "on-primary-fixed-variant": "#574144",
+                    "on-secondary-fixed": "#31120d", "inverse-on-surface": "#f2f1eb", "tertiary-fixed": "#ffdad9"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Noto Serif"], "label-sm": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "headline-md": ["Noto Serif"], "headline-sm": ["Noto Serif"]
+            }
+          }
+        }
+      }
+    </script>
     <style>
-        /* Toast notification (appears after adding to cart) */
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .ambient-shadow { box-shadow: 0 10px 30px -10px rgba(61, 28, 22, 0.08); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Toast notification */
         .toast {
             position: fixed; bottom: 30px; right: 30px;
-            background: #10b981; color: white;
+            background: var(--color-on-primary-container, #765e61); color: white;
             padding: 14px 22px; border-radius: 10px;
             font-weight: 600; font-size: 0.9rem;
             box-shadow: 0 8px 20px rgba(0,0,0,0.2);
@@ -81,232 +121,257 @@ $msg = $_GET['msg'] ?? '';
             z-index: 999;
         }
         .toast.show { transform: translateX(0); }
-        /* Add to cart button loading state */
         .btn-cart.loading { opacity: 0.7; pointer-events: none; }
-        
-        /* Category Filter Styles */
-        .category-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 24px;
-            overflow-x: auto;
-            padding-bottom: 8px;
-        }
-        .cat-tab {
-            padding: 8px 16px;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text);
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .cat-tab:hover { background: #f8f9fa; }
-        .cat-tab.active {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-        /* Product category badge */
-        .product-cat-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .product-card { position: relative; }
     </style>
 </head>
-<body class="dashboard-body">
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex flex-col">
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-    <div class="sidebar-brand">
-        <img src="../assets/logo/image.png" alt="GSK Logo">
-        <div><h2>Ghanshyam Bakery</h2><span>Customer Portal</span></div>
-    </div>
-    <nav class="sidebar-nav">
-        <span class="nav-section-label">Main Menu</span>
-        <a href="dashboard.php"><span class="nav-icon">🏠</span> Dashboard</a>
-        <a href="shops.php" class="active"><span class="nav-icon">📍</span> Find Shops</a>
-        <a href="cart.php"><span class="nav-icon">🛒</span> My Cart</a>
-        <a href="my_orders.php"><span class="nav-icon">📦</span> My Orders</a>
+<!-- TopNavBar -->
+<header class="bg-stone-50 border-b border-rose-100 shadow-sm shadow-amber-900/5 sticky top-0 z-50">
+    <nav class="flex justify-between items-center w-full px-8 py-4 font-serif text-base tracking-tight">
+        <div class="flex items-center gap-6">
+            <img src="../assets/logo/image.png" alt="Ghanshyam Bakery Logo" class="w-10 h-10 object-cover rounded-md"/>
+            <div>
+                <div class="text-2xl font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</div>
+                <div class="text-sm text-stone-500">Bringing your nearest cake shop just a click away.</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-8">
+            <div class="hidden md:flex gap-6">
+                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="dashboard.php">Home</a>
+                <a class="text-amber-900 border-b-2 border-amber-900 font-bold pb-1 duration-300 ease-in-out" href="shops.php">Shop</a>
+                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="cart.php">Cart</a>
+                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="my_orders.php">Orders</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="cart.php" class="text-amber-950 p-2 hover:bg-rose-50 rounded-full transition-colors">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                </a>
+                <a href="../logout.php" class="text-amber-950 p-2 hover:bg-rose-50 rounded-full transition-colors" title="Logout">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
+            </div>
+        </div>
     </nav>
-    <div class="sidebar-footer">
-        <a href="../logout.php"><span>🚪</span> Logout</a>
-    </div>
-</aside>
+</header>
 
-<div class="main-content">
-    <div class="topbar">
-        <div class="topbar-title">
-            <h1>🏪 <?= htmlspecialchars($shop['name']) ?></h1>
-            <p>📍 <?= htmlspecialchars($shop['address']) ?></p>
-        </div>
-        <div class="topbar-user">
-            <div class="user-info">
-                <strong><?= htmlspecialchars($_SESSION['user_name']) ?></strong>
-                <span><?= $_SESSION['role'] ?></span>
-            </div>
-            <div class="avatar"><?= strtoupper(substr($_SESSION['user_name'], 0, 1)) ?></div>
-        </div>
-    </div>
-
-    <div class="page-body">
-
-        <!-- Breadcrumb navigation: Home > Shops > This Shop -->
-        <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;">
-            <a href="dashboard.php" style="color:var(--accent);text-decoration:none;">Dashboard</a> →
-            <a href="shops.php"     style="color:var(--accent);text-decoration:none;">Shops</a> →
-            <?= htmlspecialchars($shop['name']) ?>
-        </div>
-
-        <!-- Success message after adding to cart -->
-        <?php if ($msg === 'added'): ?>
-        <div class="alert alert-success">✅ Item added to your cart!</div>
-        <?php endif; ?>
-
-        <!-- View Cart shortcut button -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-            <h2 style="font-size:1.1rem;font-weight:700;">🍰 Our Menu</h2>
-            <a href="cart.php" class="btn btn-primary">🛒 View Cart</a>
-        </div>
-
-        <!-- Category Filters -->
-        <?php if (count($categories) > 0): ?>
-        <div class="category-tabs" id="categoryTabs">
-            <button class="cat-tab active" data-cat="all" onclick="filterCategory('all', this)">All</button>
-            <?php foreach ($categories as $cat): ?>
-                <button class="cat-tab" data-cat="<?= htmlspecialchars($cat) ?>" onclick="filterCategory('<?= htmlspecialchars($cat) ?>', this)">
-                    <?= htmlspecialchars($cat) ?>
-                </button>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-
-        <!-- ─── Cake Product Grid ──────────────────────────────────────────── -->
-        <?php if (count($products) > 0): ?>
-        <div class="products-grid" id="productGrid">
-            <?php foreach ($products as $product): ?>
-            <div class="product-card" data-category="<?= htmlspecialchars($product['category_name']) ?>">
-                <!-- Category Badge -->
-                <span class="product-cat-badge"><?= htmlspecialchars($product['category_name']) ?></span>
-                <!-- Cake Image -->
-                <img
-                    src="<?= htmlspecialchars($product['image_url'] ?: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80') ?>"
-                    alt="<?= htmlspecialchars($product['name']) ?>"
-                    onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80'"
-                >
-                <div class="product-card-body">
-                    <!-- Cake Name -->
-                    <h3><?= htmlspecialchars($product['name']) ?></h3>
-                    <!-- Description -->
-                    <p><?= htmlspecialchars($product['description']) ?></p>
+<div class="flex w-full">
+    <!-- SideNavBar -->
+    <aside class="hidden lg:flex flex-col h-[calc(100vh-80px)] w-72 bg-white border-r border-rose-50 shadow-lg shadow-amber-900/5 sticky top-20 p-6 space-y-2 font-serif text-sm font-medium">
+        <div class="mb-8">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-amber-950 font-bold text-lg">
+                    <?= $userInitial ?>
                 </div>
-                <div class="product-card-footer">
-                    <!-- Price -->
-                    <span class="product-price">₹<?= number_format($product['price'], 2) ?></span>
-                    <!-- Add to Cart button — sends product + shop ID to add_to_cart.php -->
-                    <button
-                        class="btn btn-primary btn-sm btn-cart"
-                        onclick="addToCart(<?= $product['id'] ?>, <?= $shopId ?>, this)"
-                    >
-                        + Add to Cart
+                <div>
+                    <p class="font-bold text-amber-950"><?= htmlspecialchars($userName) ?></p>
+                    <p class="text-xs text-stone-500">Customer</p>
+                </div>
+            </div>
+        </div>
+        <p class="text-[10px] uppercase tracking-widest text-stone-400 font-bold px-4 mb-2">Navigation</p>
+        <a class="text-stone-500 px-4 py-3 flex items-center gap-3 hover:bg-rose-50/50 rounded-lg transition-all" href="dashboard.php">
+            <span class="material-symbols-outlined">home</span> Home
+        </a>
+        <a class="bg-rose-50 text-amber-900 font-semibold rounded-lg px-4 py-3 flex items-center gap-3 scale-[0.98] active:scale-95 duration-200" href="shops.php">
+            <span class="material-symbols-outlined">storefront</span> Browse Shops
+        </a>
+        <a class="text-stone-500 px-4 py-3 flex items-center gap-3 hover:bg-rose-50/50 rounded-lg transition-all" href="my_orders.php">
+            <span class="material-symbols-outlined">receipt_long</span> My Orders
+        </a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-x-hidden">
+        
+        <div class="mb-8">
+            <div class="flex items-center gap-2 text-sm text-stone-500 mb-4">
+                <a href="dashboard.php" class="hover:text-secondary transition-colors">Home</a>
+                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                <a href="shops.php" class="hover:text-secondary transition-colors">Shops</a>
+                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                <span class="text-amber-950 font-medium"><?= htmlspecialchars($shop['name']) ?></span>
+            </div>
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 bg-white p-6 rounded-xl border border-rose-50 ambient-shadow mb-8">
+                <div>
+                    <h1 class="font-headline-lg text-amber-950 mb-1">🏪 <?= htmlspecialchars($shop['name']) ?></h1>
+                    <p class="text-body-md text-stone-500 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[18px]">location_on</span> <?= htmlspecialchars($shop['address']) ?>
+                    </p>
+                </div>
+                <a href="cart.php" class="bg-secondary text-white px-5 py-2 rounded-lg font-label-md hover:bg-on-secondary-fixed-variant transition-colors shadow-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">shopping_cart</span> View Cart
+                </a>
+            </div>
+            
+            <!-- Category Filters -->
+            <?php if (count($categories) > 0): ?>
+            <div class="flex gap-3 mb-8 overflow-x-auto hide-scrollbar pb-2">
+                <button class="cat-tab px-5 py-2 rounded-full font-label-md transition-colors bg-secondary text-white shadow-sm" data-cat="all" onclick="filterCategory('all', this)">All Treats</button>
+                <?php foreach ($categories as $cat): ?>
+                    <button class="cat-tab px-5 py-2 rounded-full font-label-md transition-colors bg-white text-stone-600 border border-stone-200 hover:bg-rose-50" data-cat="<?= htmlspecialchars($cat) ?>" onclick="filterCategory('<?= htmlspecialchars($cat) ?>', this)">
+                        <?= htmlspecialchars($cat) ?>
                     </button>
-                </div>
+                <?php endforeach; ?>
             </div>
-            <?php endforeach; ?>
+            <?php endif; ?>
         </div>
-        <?php else: ?>
-        <div class="empty-state">
-            <div class="empty-icon">🎂</div>
-            <h3>No items available right now</h3>
-            <p>The shopkeeper hasn't added any products yet. Check back soon!</p>
-        </div>
-        <?php endif; ?>
 
-    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="productGrid">
+            <?php if (count($products) > 0): ?>
+                <?php foreach ($products as $product): ?>
+                <!-- Product Card -->
+                <div id="product_<?= $product['id'] ?>" class="product-card bg-white rounded-xl overflow-hidden border border-rose-50 ambient-shadow group flex flex-col" data-category="<?= htmlspecialchars($product['category_name']) ?>">
+                    <div class="aspect-video bg-rose-50 flex items-center justify-center relative overflow-hidden">
+                        <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                             src="<?= htmlspecialchars($product['image_url'] ?: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80') ?>" 
+                             alt="<?= htmlspecialchars($product['name']) ?>"
+                             onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80'">
+                        <div class="absolute top-3 left-3">
+                            <span class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold shadow-sm">
+                                <?= htmlspecialchars($product['category_name']) ?>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-5 flex-1 flex flex-col">
+                        <h3 class="font-headline-sm text-lg text-amber-950 mb-2"><?= htmlspecialchars($product['name']) ?></h3>
+                        <p class="text-sm text-stone-500 mb-6 flex-1"><?= htmlspecialchars($product['description']) ?></p>
+                        
+                        <div class="flex flex-col mt-auto gap-4">
+                            <?php if ($product['has_variants'] && !empty($product['variants'])): ?>
+                                <select id="variant_select_<?= $product['id'] ?>" class="w-full text-sm border-stone-200 rounded-lg focus:ring-secondary focus:border-secondary text-stone-600" onchange="updatePrice(<?= $product['id'] ?>)">
+                                    <?php foreach ($product['variants'] as $i => $v): ?>
+                                        <option value="<?= htmlspecialchars($v['weight_label']) ?>" data-price="<?= $v['price'] ?>">
+                                            <?= htmlspecialchars($v['weight_label']) ?> - ₹<?= number_format($v['price'], 2) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            <?php endif; ?>
+                            
+                            <div class="flex justify-between items-center">
+                                <?php if ($product['has_variants'] && !empty($product['variants'])): ?>
+                                    <span class="font-headline-sm text-xl text-secondary" id="price_display_<?= $product['id'] ?>">₹<?= number_format($product['variants'][0]['price'], 2) ?></span>
+                                <?php else: ?>
+                                    <span class="font-headline-sm text-xl text-secondary">₹<?= number_format($product['price'], 2) ?></span>
+                                <?php endif; ?>
+                                
+                                <button class="btn-cart flex items-center justify-center gap-1 bg-surface-container hover:bg-secondary hover:text-white text-secondary px-4 py-2 rounded-lg font-label-md transition-colors" onclick="addToCart(<?= $product['id'] ?>, <?= $shopId ?>, this, <?= $product['has_variants'] ? 'true' : 'false' ?>)">
+                                    <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span> Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="col-span-full bg-white rounded-xl py-16 px-8 text-center border border-rose-50 ambient-shadow">
+                    <span class="material-symbols-outlined text-4xl text-stone-300 mb-4">cake</span>
+                    <h3 class="font-headline-sm text-amber-950 mb-2">No items available right now</h3>
+                    <p class="text-stone-500">The shopkeeper hasn't added any products yet. Check back soon!</p>
+                </div>
+            <?php endif; ?>
+        </div>
+        
+    </main>
 </div>
 
-<!-- Toast notification popup (shows after adding to cart) -->
+<!-- Toast notification popup -->
 <div class="toast" id="toast">✅ Added to cart!</div>
 
-<script>
-/**
- * addToCart(productId, shopId, button)
- * =====================================
- * Sends an AJAX (background) request to add_to_cart.php
- * without reloading the whole page.
- *
- * AJAX = Asynchronous JavaScript And XML
- * It lets us talk to PHP in the background silently.
- */
-function addToCart(productId, shopId, button) {
-    // Disable button to prevent double-clicking
-    button.classList.add('loading');
-    button.textContent = '⏳ Adding...';
+<!-- Footer -->
+<footer class="bg-stone-100 border-t border-stone-200 mt-auto">
+    <div class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 font-serif text-xs uppercase tracking-widest">
+        <div class="flex flex-col items-center md:items-start gap-4">
+            <span class="text-lg font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</span>
+            <p class="text-stone-500 normal-case tracking-normal text-sm max-w-xs text-center md:text-left">© 2024 Ghanshyam Bakery &amp; Live Cake Shop. Artisanal excellence in every bite.</p>
+        </div>
+        <div class="flex gap-4">
+            <div class="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center text-amber-900 hover:bg-rose-50 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-sm">share</span>
+            </div>
+            <div class="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center text-amber-900 hover:bg-rose-50 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-sm">mail</span>
+            </div>
+        </div>
+    </div>
+</footer>
 
-    // fetch() sends a request to add_to_cart.php in the background
+<script>
+function updatePrice(productId) {
+    const select = document.getElementById('variant_select_' + productId);
+    if (!select) return;
+    const option = select.options[select.selectedIndex];
+    const price = parseFloat(option.getAttribute('data-price'));
+    const display = document.getElementById('price_display_' + productId);
+    if (display) {
+        display.innerText = '₹' + price.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+}
+
+function addToCart(productId, shopId, button, hasVariants) {
+    const originalText = button.innerHTML;
+    button.classList.add('loading');
+    button.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Adding...';
+
+    let bodyData = `product_id=${productId}&shop_id=${shopId}`;
+    if (hasVariants) {
+        const select = document.getElementById('variant_select_' + productId);
+        if (select) {
+            bodyData += `&variant_weight=${encodeURIComponent(select.value)}`;
+        }
+    }
+
     fetch('add_to_cart.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `product_id=${productId}&shop_id=${shopId}`
+        body: bodyData
     })
-    .then(response => response.json()) // Parse the JSON response from PHP
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show the green toast notification
-            showToast('✅ ' + data.message);
-            button.textContent = '✅ Added!';
+            showToast('✅ ' + data.message, 'success');
+            button.innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span> Added';
+            button.classList.replace('bg-surface-container', 'bg-green-100');
+            button.classList.replace('text-secondary', 'text-green-700');
             setTimeout(() => {
-                button.textContent = '+ Add to Cart';
+                button.innerHTML = originalText;
+                button.classList.replace('bg-green-100', 'bg-surface-container');
+                button.classList.replace('text-green-700', 'text-secondary');
                 button.classList.remove('loading');
             }, 2000);
         } else {
             showToast('❌ ' + data.message, 'error');
-            button.textContent = '+ Add to Cart';
+            button.innerHTML = originalText;
             button.classList.remove('loading');
         }
     })
     .catch(() => {
-        showToast('❌ Something went wrong.');
-        button.textContent = '+ Add to Cart';
+        showToast('❌ Something went wrong.', 'error');
+        button.innerHTML = originalText;
         button.classList.remove('loading');
     });
 }
 
-// Shows the toast notification for 3 seconds
 function showToast(msg, type = 'success') {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
-    toast.style.background = type === 'error' ? '#ef4444' : '#10b981';
+    toast.style.background = type === 'error' ? '#ba1a1a' : '#70585b';
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-/**
- * filterCategory(categoryName, tabElement)
- * ========================================
- * Filters the product grid to show only items matching the selected category.
- */
 function filterCategory(categoryName, btn) {
-    // Format UI buttons
-    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
+    document.querySelectorAll('.cat-tab').forEach(t => {
+        t.className = 'cat-tab px-5 py-2 rounded-full font-label-md transition-colors bg-white text-stone-600 border border-stone-200 hover:bg-rose-50';
+    });
+    btn.className = 'cat-tab px-5 py-2 rounded-full font-label-md transition-colors bg-secondary text-white shadow-sm';
 
-    // Filter items
     const cards = document.querySelectorAll('.product-card');
     cards.forEach(card => {
         if (categoryName === 'all' || card.getAttribute('data-category') === categoryName) {
-            card.style.display = '';
+            card.style.display = 'flex';
         } else {
             card.style.display = 'none';
         }

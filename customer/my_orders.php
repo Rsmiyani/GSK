@@ -2,11 +2,7 @@
 /**
  * customer/my_orders.php
  * ======================
- * CUSTOMER ORDER HISTORY PAGE
- *
- * Shows all orders placed by this customer with:
- *   - Order number, shop, type, total, status, date
- *   - Expandable view of items inside each order
+ * CUSTOMER ORDER HISTORY PAGE - Sweet Artisans Theme
  */
 
 $required_role = 'customer';
@@ -14,6 +10,8 @@ require_once '../includes/auth_check.php';
 require_once '../config/db.php';
 
 $userId = $_SESSION['user_id'];
+$userName = $_SESSION['user_name'];
+$userInitial = strtoupper(substr($userName, 0, 1));
 
 // ─── Handle Order Cancellation ───────────────────────────────────────────────
 $success_msg = '';
@@ -21,8 +19,6 @@ $error_msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
     $cancelId = (int)$_POST['cancel_order_id'];
-    
-    // Verify order belongs to user
     $checkRes = mysqli_query($conn, "SELECT status FROM orders WHERE id = $cancelId AND customer_id = $userId");
     $orderData = mysqli_fetch_assoc($checkRes);
     
@@ -30,22 +26,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
         if ($orderData['status'] === 'pending') {
             $updateQ = "UPDATE orders SET status = 'cancelled' WHERE id = $cancelId AND customer_id = $userId";
             if (mysqli_query($conn, $updateQ)) {
-                $success_msg = "Order #" . str_pad($cancelId, 4, '0', STR_PAD_LEFT) . " has been successfully cancelled.";
+                $success_msg = "Order #" . str_pad($cancelId, 4, '0', STR_PAD_LEFT) . " has been cancelled.";
             } else {
-                $error_msg = "Could not cancel order due to a system error. Please try again.";
+                $error_msg = "Could not cancel order due to a system error.";
             }
         } else {
-            $error_msg = "Order can no longer be cancelled as it is in the '" . ucfirst($orderData['status']) . "' stage.";
+            $error_msg = "Order can no longer be cancelled as it is " . ucfirst($orderData['status']) . ".";
         }
     } else {
         $error_msg = "Invalid order specified.";
     }
 }
 
-// ─── Fetch All Orders for This Customer ──────────────────────────────────────
-// Most recent orders first (ORDER BY created_at DESC)
+// ─── Fetch All Orders ────────────────────────────────────────────────────────
 $ordersRes = mysqli_query($conn,
-    "SELECT o.*, s.name AS shop_name
+    "SELECT o.*, s.name AS shop_name, s.address AS shop_address
      FROM orders o JOIN shops s ON o.shop_id = s.id
      WHERE o.customer_id = $userId
      ORDER BY o.created_at DESC"
@@ -53,14 +48,12 @@ $ordersRes = mysqli_query($conn,
 $orders = [];
 while ($row = mysqli_fetch_assoc($ordersRes)) { $orders[] = $row; }
 
-// ─── For each order, fetch its items ─────────────────────────────────────────
 $orderItems = [];
 foreach ($orders as $order) {
     $itemsRes = mysqli_query($conn,
-        "SELECT oi.*, p.name AS product_name, p.image_url, c.name AS category_name
+        "SELECT oi.*, p.name AS product_name, p.image_url, oi.variant_weight
          FROM order_items oi 
          JOIN products p ON oi.product_id = p.id
-         LEFT JOIN categories c ON p.category_id = c.id
          WHERE oi.order_id = {$order['id']}"
     );
     $orderItems[$order['id']] = [];
@@ -69,425 +62,353 @@ foreach ($orders as $order) {
     }
 }
 
-// Status badge colors (defined in dashboard.css)
-$statusColors = [
-    'pending'   => '⏳',
-    'preparing' => '🍳',
-    'ready'     => '✅',
-    'completed' => '🎉',
-    'cancelled' => '❌',
-];
+$statusMap = ['pending'=>25, 'preparing'=>50, 'ready'=>75, 'completed'=>100, 'cancelled'=>0];
+
+$allowedStatusFilters = ['all', 'pending', 'preparing', 'ready', 'completed', 'cancelled'];
+$currentFilter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'all';
+if (!in_array($currentFilter, $allowedStatusFilters, true)) {
+    $currentFilter = 'all';
+}
+
+$filteredOrders = array_values(array_filter($orders, function ($order) use ($currentFilter) {
+    if ($currentFilter === 'all') {
+        return true;
+    }
+    return trim(strtolower($order['status'])) === $currentFilter;
+}));
+
+$totalOrders = count($orders);
+$activeOrders = 0;
+$completedOrders = 0;
+$cancelledOrders = 0;
+foreach ($orders as $orderCountRow) {
+    $normalizedStatus = trim(strtolower($orderCountRow['status']));
+    if (in_array($normalizedStatus, ['pending', 'preparing', 'ready'], true)) {
+        $activeOrders++;
+    }
+    if ($normalizedStatus === 'completed') {
+        $completedOrders++;
+    }
+    if ($normalizedStatus === 'cancelled') {
+        $cancelledOrders++;
+    }
+}
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Orders - Ghanshyam Bakery</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>My Orders - Ghanshyam Bakery & Live Cake Shop</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f5f3ee", "on-secondary-fixed-variant": "#643c35", "on-tertiary-fixed": "#400009", "surface-dim": "#dbdad4",
+                    "primary-fixed": "#fbdbde", "tertiary": "#be0630", "background": "#fbf9f3", "primary-fixed-dim": "#debfc2", "error-container": "#ffdad6",
+                    "secondary": "#7f534b", "surface": "#fbf9f3", "primary": "#70585b", "surface-container-high": "#eae8e2", "surface-variant": "#e4e2dd",
+                    "surface-container-highest": "#e4e2dd", "inverse-surface": "#30312d", "primary-container": "#fadadd", "secondary-fixed": "#ffdad4",
+                    "surface-bright": "#fbf9f3", "outline": "#807475", "surface-container": "#f0eee8", "on-primary": "#ffffff", "secondary-container": "#fec4ba",
+                    "on-surface": "#1b1c19", "on-secondary": "#ffffff", "outline-variant": "#d2c3c4", "on-tertiary": "#ffffff", "on-background": "#1b1c19",
+                    "surface-container-lowest": "#ffffff", "tertiary-fixed-dim": "#ffb3b3", "on-secondary-container": "#7a4f47", "inverse-primary": "#debfc2",
+                    "on-primary-container": "#765e61", "surface-tint": "#70585b", "tertiary-container": "#ffd9d8", "on-primary-fixed": "#281719",
+                    "on-surface-variant": "#4f4445", "on-tertiary-container": "#c61235", "on-error": "#ffffff", "secondary-fixed-dim": "#f2b9af",
+                    "error": "#ba1a1a", "on-error-container": "#93000a", "on-tertiary-fixed-variant": "#920022", "on-primary-fixed-variant": "#574144",
+                    "on-secondary-fixed": "#31120d", "inverse-on-surface": "#f2f1eb", "tertiary-fixed": "#ffdad9"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Noto Serif"], "label-sm": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "headline-md": ["Noto Serif"], "headline-sm": ["Noto Serif"]
+            }
+          }
+        }
+      }
+    </script>
     <style>
-        :root { --primary-color: var(--accent); }
-        /* Modern Card-based Order Layout */
-        .order-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            margin-bottom: 24px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            cursor: pointer;
-        }
-        .order-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-        }
-        
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid var(--border-color);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        
-        .order-header-left h3 {
-            margin: 0;
-            font-size: 1.1rem;
-            color: var(--text-color);
-        }
-        
-        .order-meta {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            display: flex;
-            gap: 15px;
-        }
-        
-        .order-body {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        /* Status Timeline */
-        .status-timeline {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            position: relative;
-            margin: 12px 0 22px 0;
-            padding: 6px 6px 0;
-            gap: 8px;
-        }
-
-        .timeline-step {
-            position: relative;
-            z-index: 2;
-            text-align: center;
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .timeline-step:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            top: 22px;
-            left: 50%;
-            width: 100%;
-            height: 4px;
-            background: #e2e8f0;
-            z-index: -1;
-            border-radius: 999px;
-        }
-
-        .timeline-step.completed:not(:last-child)::after {
-            background: var(--success);
-        }
-
-        .timeline-step.active:not(:last-child)::after {
-            background: linear-gradient(to right, var(--accent) 50%, #e2e8f0 50%);
-        }
-        .timeline-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: #fff;
-            border: 2px solid #dbe4ef;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #94a3b8;
-            font-size: 16px;
-            transition: all 0.25s ease;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06), 0 0 0 5px white;
-        }
-        .timeline-step.active .timeline-icon {
-            border-color: transparent;
-            background: linear-gradient(135deg, var(--accent), #fb7185);
-            color: white;
-            transform: translateY(-2px) scale(1.04);
-            box-shadow: 0 12px 26px rgba(233, 30, 140, 0.24), 0 0 0 5px white;
-        }
-        .timeline-step.completed .timeline-icon {
-            border-color: #bbf7d0;
-            background: #ecfdf5;
-            color: #059669;
-            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.12), 0 0 0 5px white;
-        }
-        .timeline-label {
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            line-height: 1.25;
-        }
-        .timeline-step.active .timeline-label { color: var(--accent); }
-        .timeline-step.completed .timeline-label { color: #047857; }
-        
-        .timeline-cancelled { width: 100%; text-align: center; color: #ef4444; font-weight: 600; padding: 15px; background: #fee2e2; border-radius: 8px; border: 1px dashed #f87171; }
-
-        /* Items Grid */
-        .order-items-grid {
-            display: grid;
-            gap: 15px;
-        }
-        
-        .item-card {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 12px;
-            background: #fdfdfd;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-        }
-        
-        .item-image {
-            width: 70px;
-            height: 70px;
-            border-radius: 8px;
-            object-fit: cover;
-            background: #eee;
-        }
-        
-        .item-details { flex: 1; }
-        .item-title { font-weight: 600; color: var(--text-color); margin-bottom: 3px; font-size: 0.95rem; }
-        .item-category { font-size: 0.75rem; color: var(--text-muted); background: #e2e8f0; padding: 2px 8px; border-radius: 12px; display: inline-block; margin-bottom: 5px; }
-        .item-math { font-size: 0.85rem; color: var(--text-muted); }
-        .item-total { font-weight: 700; color: var(--text-color); }
-
-        /* Summary Section */
-        .order-footer {
-            border-top: 1px solid var(--border-color);
-            padding-top: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .order-delivery-info {
-            flex: 1;
-            min-width: 250px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            background: rgba(0,0,0,0.02);
-            padding: 12px 15px;
-            border-radius: 8px;
-            border-left: 3px solid var(--primary-color);
-        }
-        
-        .order-summary-box {
-            min-width: 220px;
-            background: #fafafa;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #eaeaea;
-        }
-        .summary-line { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-muted); }
-        .summary-line.grand-total { border-top: 1px dashed #ccc; padding-top: 8px; margin-top: 8px; font-size: 1.1rem; font-weight: 700; color: var(--text-color); }
-        
-        /* Expand/Collapse logic */
-        .order-body-wrapper { display: none; }
-        .order-body-wrapper.open { display: block; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from{opacity:0; transform:translateY(-5px);} to{opacity:1; transform:translateY(0);} }
-        
-        @media(max-width: 768px) {
-             .order-header { flex-direction: column; align-items: flex-start;}
-             .order-meta { flex-direction: column; gap:5px;}
-        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .ambient-shadow { box-shadow: 0 10px 30px -10px rgba(61, 28, 22, 0.08); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="dashboard-body">
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen">
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-    <div class="sidebar-brand">
-        <img src="../assets/logo/image.png" alt="GSK Logo">
-        <div><h2>Ghanshyam Bakery</h2><span>Customer Portal</span></div>
-    </div>
-    <nav class="sidebar-nav">
-        <span class="nav-section-label">Main Menu</span>
-        <a href="dashboard.php"><span class="nav-icon">🏠</span> Dashboard</a>
-        <a href="shops.php"><span class="nav-icon">📍</span> Find Shops</a>
-        <a href="cart.php"><span class="nav-icon">🛒</span> My Cart</a>
-        <a href="my_orders.php" class="active"><span class="nav-icon">📦</span> My Orders</a>
+<!-- TopNavBar -->
+<header class="bg-stone-50 border-b border-rose-100 shadow-sm shadow-amber-900/5 sticky top-0 z-50">
+    <nav class="flex justify-between items-center w-full px-8 py-4 font-serif text-base tracking-tight">
+        <div class="flex items-center gap-6">
+            <img src="../assets/logo/image.png" alt="Ghanshyam Bakery Logo" class="w-10 h-10 object-cover rounded-md"/>
+            <div>
+                <div class="text-2xl font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</div>
+                <div class="text-sm text-stone-500">Bringing your nearest cake shop just a click away.</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-8">
+            <div class="hidden md:flex gap-6">
+                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="dashboard.php">Home</a>
+                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="shops.php">Shop</a>
+                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="cart.php">Cart</a>
+                <a class="text-amber-900 border-b-2 border-amber-900 font-bold pb-1 duration-300 ease-in-out" href="my_orders.php">Orders</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="cart.php" class="text-amber-950 p-2 hover:bg-rose-50 rounded-full transition-colors">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                </a>
+                <a href="../logout.php" class="text-amber-950 p-2 hover:bg-rose-50 rounded-full transition-colors" title="Logout">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
+            </div>
+        </div>
     </nav>
-    <div class="sidebar-footer"><a href="../logout.php"><span>🚪</span> Logout</a></div>
-</aside>
+</header>
 
-<div class="main-content">
-    <div class="topbar">
-        <div class="topbar-title">
-            <h1>📦 My Orders</h1>
-            <p><?= count($orders) ?> order(s) total</p>
+<div class="flex w-full">
+    <!-- SideNavBar -->
+    <aside class="hidden lg:flex flex-col h-[calc(100vh-80px)] w-72 bg-white border-r border-rose-50 shadow-lg shadow-amber-900/5 sticky top-20 p-6 space-y-2 font-serif text-sm font-medium">
+        <div class="mb-8">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-amber-950 font-bold text-lg">
+                    <?= $userInitial ?>
+                </div>
+                <div>
+                    <p class="font-bold text-amber-950"><?= htmlspecialchars($userName) ?></p>
+                    <p class="text-xs text-stone-500">Customer</p>
+                </div>
+            </div>
         </div>
-        <div class="topbar-user">
-            <div class="user-info"><strong><?= htmlspecialchars($_SESSION['user_name']) ?></strong><span>customer</span></div>
-            <div class="avatar"><?= strtoupper(substr($_SESSION['user_name'],0,1)) ?></div>
-        </div>
-    </div>
+        <p class="text-[10px] uppercase tracking-widest text-stone-400 font-bold px-4 mb-2">Navigation</p>
+        <a class="text-stone-500 px-4 py-3 flex items-center gap-3 hover:bg-rose-50/50 rounded-lg transition-all" href="dashboard.php">
+            <span class="material-symbols-outlined">home</span> Home
+        </a>
+        <a class="text-stone-500 px-4 py-3 flex items-center gap-3 hover:bg-rose-50/50 rounded-lg transition-all" href="shops.php">
+            <span class="material-symbols-outlined">storefront</span> Browse Shops
+        </a>
+        <a class="bg-rose-50 text-amber-900 font-semibold rounded-lg px-4 py-3 flex items-center gap-3 scale-[0.98] active:scale-95 duration-200" href="my_orders.php">
+            <span class="material-symbols-outlined">receipt_long</span> My Orders
+        </a>
+    </aside>
 
-    <div class="page-body">
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-x-hidden">
+        
+        <div class="bg-white rounded-2xl border border-rose-50 ambient-shadow overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-amber-50 via-rose-50 to-stone-50 p-6 md:p-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                <div>
+                    <p class="text-label-sm uppercase tracking-[0.2em] text-stone-500 mb-3">Order Center</p>
+                    <h1 class="font-headline-lg text-amber-950">My Orders</h1>
+                    <p class="text-body-md text-stone-600 mt-3 max-w-2xl">Track every cake journey, from preparation to doorstep delivery, in one calm view.</p>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full md:w-auto">
+                    <div class="bg-white/80 backdrop-blur rounded-xl border border-rose-100 px-4 py-3 min-w-[108px] shadow-sm">
+                        <p class="text-[10px] uppercase tracking-widest text-stone-400">Total</p>
+                        <p class="text-2xl font-bold text-amber-950 mt-1"><?= $totalOrders ?></p>
+                    </div>
+                    <div class="bg-white/80 backdrop-blur rounded-xl border border-rose-100 px-4 py-3 min-w-[108px] shadow-sm">
+                        <p class="text-[10px] uppercase tracking-widest text-stone-400">Active</p>
+                        <p class="text-2xl font-bold text-secondary mt-1"><?= $activeOrders ?></p>
+                    </div>
+                    <div class="bg-white/80 backdrop-blur rounded-xl border border-rose-100 px-4 py-3 min-w-[108px] shadow-sm">
+                        <p class="text-[10px] uppercase tracking-widest text-stone-400">Done</p>
+                        <p class="text-2xl font-bold text-green-700 mt-1"><?= $completedOrders ?></p>
+                    </div>
+                    <div class="bg-white/80 backdrop-blur rounded-xl border border-rose-100 px-4 py-3 min-w-[108px] shadow-sm">
+                        <p class="text-[10px] uppercase tracking-widest text-stone-400">Cancelled</p>
+                        <p class="text-2xl font-bold text-red-600 mt-1"><?= $cancelledOrders ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 mb-8">
+            <?php
+                $filterLabels = [
+                    'all' => 'All Orders',
+                    'pending' => 'Pending',
+                    'preparing' => 'Preparing',
+                    'ready' => 'Ready',
+                    'completed' => 'Completed',
+                    'cancelled' => 'Cancelled'
+                ];
+            ?>
+            <?php foreach ($filterLabels as $filterKey => $filterLabel): ?>
+                <?php $isActiveFilter = $currentFilter === $filterKey; ?>
+                <a href="?status=<?= urlencode($filterKey) ?>"
+                   class="px-4 py-2 rounded-full text-sm font-semibold border transition-all <?= $isActiveFilter ? 'bg-secondary text-white border-secondary shadow-md shadow-secondary/20' : 'bg-white text-stone-600 border-stone-200 hover:bg-rose-50 hover:border-rose-200' ?>">
+                    <?= htmlspecialchars($filterLabel) ?>
+                </a>
+            <?php endforeach; ?>
+        </div>
+
         <?php if ($success_msg): ?>
-            <div class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #c3e6cb;">
-                ✅ <?= htmlspecialchars($success_msg) ?>
+            <div class="mb-6 p-4 bg-green-50 text-green-800 rounded-lg border border-green-200 flex items-center gap-3">
+                <span class="material-symbols-outlined">check_circle</span> <?= htmlspecialchars($success_msg) ?>
             </div>
         <?php endif; ?>
         <?php if ($error_msg): ?>
-            <div class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
-                ⚠️ <?= htmlspecialchars($error_msg) ?>
+            <div class="mb-6 p-4 bg-red-50 text-red-800 rounded-lg border border-red-200 flex items-center gap-3">
+                <span class="material-symbols-outlined">error</span> <?= htmlspecialchars($error_msg) ?>
             </div>
         <?php endif; ?>
 
-        <?php if (count($orders) > 0): ?>
-        <div class="orders-list" style="display:flex; flex-direction:column; gap:16px;">
-            <?php foreach ($orders as $order): 
-                // Reverse calculation for GST/SGST (18% tax bracket)
-                // Subtotal * 1.18 = Total
-                $subtotal = $order['total_amount'] / 1.18;
-                $gst = $subtotal * 0.09;
-                $sgst = $subtotal * 0.09;
-                
-                // Status timeline progress logic
-                $progress = 0; $steps = ['pending'=>0, 'preparing'=>1, 'ready'=>2, 'completed'=>3];
-                if(isset($steps[$order['status']])) {
-                    $currStep = $steps[$order['status']];
-                    $progress = ($currStep / 3) * 100;
-                }
-            ?>
-            
-            <div class="order-card">
-                <!-- Outer clickable header -->
-                <div class="order-header" onclick="toggleDetail(<?= $order['id'] ?>)" style="cursor:pointer;">
-                    <div class="order-header-left">
-                        <h3>Order #<?= str_pad($order['id'], 6, '0', STR_PAD_LEFT) ?></h3>
-                        <div class="order-meta">
-                            <span>📅 <?= date('d M Y, h:i A', strtotime($order['created_at'])) ?></span>
-                            <span>🏪 <?= htmlspecialchars($order['shop_name']) ?></span>
-                            <span><span class="badge badge-<?= $order['order_type'] ?>"><?= $order['order_type'] === 'delivery' ? '🚚 Delivery' : '🏪 Pickup' ?></span></span>
+        <?php if (empty($filteredOrders)): ?>
+            <div class="bg-white rounded-2xl py-16 px-8 text-center border border-rose-50 ambient-shadow">
+                <div class="w-20 h-20 bg-gradient-to-br from-rose-50 to-stone-100 rounded-full flex items-center justify-center mx-auto mb-6 border border-rose-100">
+                    <span class="material-symbols-outlined text-5xl text-secondary">cake</span>
+                </div>
+                <h3 class="font-headline-sm text-amber-950 mb-2"><?= $currentFilter === 'all' ? 'No orders yet' : 'No orders in this status' ?></h3>
+                <p class="text-stone-500 mb-6 max-w-md mx-auto">
+                    <?= $currentFilter === 'all'
+                        ? 'You haven\'t placed any orders with Ghanshyam Bakery &amp; Live Cake Shop yet. Browse the shops and start with something sweet.'
+                        : 'Try switching to another status filter to see more orders.' ?>
+                </p>
+                <a href="shops.php" class="inline-block px-6 py-3 bg-secondary text-white rounded-lg font-label-md hover:bg-on-secondary-fixed-variant transition-colors shadow-md shadow-secondary/20">Start Browsing</a>
+            </div>
+        <?php else: ?>
+            <div class="space-y-6">
+                <?php foreach ($filteredOrders as $order): ?>
+                <?php 
+                    $normalizedStatus = trim(strtolower($order['status']));
+                    $progress = $statusMap[$normalizedStatus] ?? 0;
+                    $items = $orderItems[$order['id']] ?? [];
+                    $isCancelled = $normalizedStatus === 'cancelled';
+                    $statusTone = $isCancelled ? 'bg-red-50 text-red-700 border-red-100' : 'bg-primary-container text-on-primary-container border-primary-container';
+                    $statusLabel = ucfirst($normalizedStatus);
+                    $statusSteps = ['pending', 'preparing', 'ready', 'completed'];
+                ?>
+                <div class="bg-white rounded-2xl overflow-hidden border border-rose-100 ambient-shadow group hover:-translate-y-0.5 transition-transform duration-300">
+                    <!-- Order Header -->
+                    <div class="bg-gradient-to-r from-surface-container-low via-white to-rose-50 p-6 border-b border-rose-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <div class="flex items-center gap-3 mb-1">
+                                <h3 class="font-headline-sm text-lg text-amber-950">Order #<?= str_pad($order['id'], 4, '0', STR_PAD_LEFT) ?></h3>
+                                <span class="px-3 py-1 rounded-full text-label-sm uppercase font-bold border <?= $statusTone ?>">
+                                    <?= $order['order_type'] === 'delivery' ? '🚚 Delivery' : '🏪 Pickup' ?>
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-label-sm text-stone-500 mt-3">
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-stone-200 shadow-sm">
+                                    <span class="material-symbols-outlined text-[16px] text-secondary">schedule</span>
+                                    <?= date('M d, Y - h:i A', strtotime($order['created_at'])) ?>
+                                </span>
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-stone-200 shadow-sm">
+                                    <span class="material-symbols-outlined text-[16px] text-secondary">storefront</span>
+                                    <?= htmlspecialchars($order['shop_name']) ?>
+                                </span>
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-stone-200 shadow-sm">
+                                    <span class="material-symbols-outlined text-[16px] text-secondary">inventory_2</span>
+                                    <?= count($items) ?> item<?= count($items) === 1 ? '' : 's' ?>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-right bg-white rounded-xl border border-rose-100 px-4 py-3 shadow-sm min-w-[160px]">
+                            <p class="text-sm text-stone-500 mb-1">Total Amount</p>
+                            <p class="font-headline-sm text-xl text-amber-950">₹<?= number_format($order['total_amount'], 2) ?></p>
+                            <p class="text-xs text-stone-400 mt-1"><?= $statusLabel ?></p>
                         </div>
                     </div>
-                    <div class="order-header-right" style="text-align:right;">
-                        <div style="font-size:1.1rem; font-weight:700; color:var(--text-color); margin-bottom:5px;">₹<?= number_format($order['total_amount'], 2) ?></div>
-                        <span class="badge badge-<?= $order['status'] ?>">
-                            <?= ($statusColors[$order['status']] ?? '') ?> <?= ucfirst($order['status']) ?>
-                        </span>
-                        <span style="font-size:0.75rem; color:#cbd5e1; margin-left:10px;">▼ expand</span>
-                    </div>
-                </div>
 
-                <!-- Expandable Body -->
-                <div class="order-body-wrapper" id="detail-<?= $order['id'] ?>">
-                    <div class="order-body">
-                        
-                        <!-- Status Timeline -->
-                        <?php if ($order['status'] === 'cancelled'): ?>
-                            <div class="timeline-cancelled">❌ This order was cancelled.</div>
-                        <?php else: ?>
-                            <div class="status-timeline" data-progress="<?= $progress ?>">
-                                <?php 
-                                    $allSteps = [
-                                        ['key'=>'pending','label'=>'Placed','icon'=>'📋'],
-                                        ['key'=>'preparing','label'=>'Preparing','icon'=>'🍳'],
-                                        ['key'=>'ready','label'=>'Ready/Out','icon'=>'🚚'],
-                                        ['key'=>'completed','label'=>'Completed','icon'=>'🎉']
-                                    ];
-                                    foreach($allSteps as $idx => $s):
-                                        $isPast = $steps[$order['status']] >= $idx;
-                                        $isCurrent = $steps[$order['status']] === $idx;
-                                        $class = $isCurrent ? 'active' : ($isPast ? 'completed' : '');
-                                ?>
-                                <div class="timeline-step <?= $class ?>">
-                                    <div class="timeline-icon"><?= $s['icon'] ?></div>
-                                    <div class="timeline-label"><?= $s['label'] ?></div>
+                    <!-- Order Body -->
+                    <div class="p-6 md:p-7">
+                        <!-- Progress Bar for Active Orders -->
+                        <?php if (!$isCancelled): ?>
+                            <div class="mb-8 rounded-2xl bg-stone-50 border border-rose-100 p-4 md:p-5">
+                                <div class="flex items-center justify-between mb-4">
+                                    <span class="text-label-sm font-bold text-amber-950 uppercase tracking-widest">Status timeline</span>
+                                    <span class="text-label-sm font-bold text-secondary bg-white border border-rose-100 px-3 py-1 rounded-full shadow-sm"><?= $statusLabel ?></span>
                                 </div>
-                                <?php endforeach; ?>
+                                <div class="relative pt-4">
+                                    <div class="absolute left-4 right-4 top-8 h-[2px] bg-surface-container-high"></div>
+                                    <div class="absolute left-4 top-8 h-[2px] bg-gradient-to-r from-secondary via-rose-400 to-secondary transition-all duration-1000" style="width: <?= $progress ?>%;"></div>
+                                    <div class="grid grid-cols-4 gap-2 relative">
+                                        <?php foreach ($statusSteps as $index => $step): ?>
+                                            <?php
+                                                $stepPosition = ($index + 1) * 25;
+                                                $isStepActive = $progress >= $stepPosition;
+                                                $isCurrentStep = $normalizedStatus === $step;
+                                                $stepLabel = ucfirst($step);
+                                            ?>
+                                            <div class="flex flex-col items-center text-center gap-3">
+                                                <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center bg-white z-10 <?= $isStepActive ? 'border-secondary text-secondary shadow-sm' : 'border-stone-200 text-stone-400' ?> <?= $isCurrentStep ? 'ring-4 ring-rose-100' : '' ?>">
+                                                    <?php if ($isStepActive): ?>
+                                                        <span class="material-symbols-outlined text-[16px]">check</span>
+                                                    <?php else: ?>
+                                                        <span class="text-[11px] font-bold"><?= $index + 1 ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="px-3 py-2 rounded-xl text-[11px] sm:text-label-sm font-medium border w-full <?= $isStepActive ? 'bg-white border-secondary text-secondary shadow-sm' : 'bg-white/70 border-stone-200 text-stone-400' ?>">
+                                                    <?= $stepLabel ?>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="mb-6 p-4 bg-error-container text-on-error-container rounded-2xl border border-red-200 text-center font-bold shadow-sm">
+                                This order was cancelled.
                             </div>
                         <?php endif; ?>
 
                         <!-- Items List -->
-                        <div class="order-items-title" style="font-weight:600; font-size:0.9rem; margin-bottom:10px; color:var(--text-color); border-bottom:1px solid var(--border-color); padding-bottom:5px;">Items in this order:</div>
-                        <div class="order-items-grid">
-                            <?php foreach ($orderItems[$order['id']] as $item): ?>
-                            <div class="item-card">
-                                <?php if (!empty($item['image_url'])): ?>
-                                    <img src="<?= htmlspecialchars($item['image_url']) ?>" onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=80&q=60'" alt="img" class="item-image" loading="lazy">
-                                <?php else: ?>
-                                    <div class="item-image" style="display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#9ca3af;">🎂</div>
-                                <?php endif; ?>
-                                
-                                <div class="item-details">
-                                    <div class="item-title"><?= htmlspecialchars($item['product_name']) ?></div>
-                                    <?php if(!empty($item['category_name'])): ?>
-                                        <span class="item-category"><?= htmlspecialchars($item['category_name']) ?></span><br>
-                                    <?php endif; ?>
-                                    <span class="item-math">₹<?= number_format($item['price'], 2) ?> × <?= $item['quantity'] ?></span>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <?php foreach ($items as $item): ?>
+                            <div class="flex items-center gap-4 p-4 bg-stone-50 rounded-2xl border border-stone-100 shadow-sm">
+                                <img src="<?= htmlspecialchars($item['image_url']?:'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=80&q=60') ?>" 
+                                     class="w-16 h-16 rounded-xl object-cover border border-stone-200" alt="Item">
+                                <div class="flex-1">
+                                    <p class="font-bold text-amber-950 text-sm mb-1">
+                                        <?= htmlspecialchars($item['product_name']) ?>
+                                        <?php if($item['variant_weight']): ?>
+                                            <span class="text-[10px] font-bold text-secondary bg-secondary-container px-1.5 py-0.5 rounded ml-1"><?= htmlspecialchars($item['variant_weight']) ?></span>
+                                        <?php endif; ?>
+                                    </p>
+                                    <p class="text-xs text-stone-500">Qty: <?= $item['quantity'] ?> × ₹<?= number_format($item['price'], 2) ?></p>
                                 </div>
-                                <div class="item-total">₹<?= number_format($item['price'] * $item['quantity'], 2) ?></div>
+                                <div class="font-bold text-amber-950 bg-white px-3 py-2 rounded-xl border border-stone-200 shadow-sm">
+                                    ₹<?= number_format($item['quantity'] * $item['price'], 2) ?>
+                                </div>
                             </div>
                             <?php endforeach; ?>
                         </div>
 
-                        <!-- Footer / Summary / Delivery Info -->
-                        <div class="order-footer">
-                            <div class="order-delivery-info">
-                                <strong><?= $order['order_type'] === 'pickup' ? 'Pickup Details' : 'Delivery Details' ?></strong><br>
-                                <?php if ($order['order_type'] === 'pickup'): ?>
-                                    <div style="margin-top:4px;">
-                                        📅 Date: <strong><?= date('d F Y',strtotime($order['pickup_date'])) ?></strong><br>
-                                        ⏰ Time: <strong><?= date('h:i A',strtotime($order['pickup_time'])) ?></strong>
-                                    </div>
-                                <?php else: ?>
-                                    <div style="margin-top:4px; line-height:1.4;">
-                                        📍 <strong><?= nl2br(htmlspecialchars($order['delivery_address'])) ?></strong>
-                                    </div>
-                                <?php endif; ?>
-                                
-                                <!-- Cancellation UI -->
-                                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(0,0,0,0.1);">
-                                    <?php if ($order['status'] === 'pending'): ?>
-                                        <form method="POST" action="" onsubmit="return confirm('Are you sure you want to cancel this order? This action cannot be undone.');">
-                                            <input type="hidden" name="cancel_order_id" value="<?= $order['id'] ?>">
-                                            <button type="submit" class="btn btn-danger" style="background-color: var(--danger-color, #dc3545); border: none; padding: 6px 14px; font-size: 0.85rem;">
-                                                ❌ Cancel Order
-                                            </button>
-                                        </form>
-                                    <?php elseif ($order['status'] === 'cancelled'): ?>
-                                        <span style="font-size: 0.85rem; color: var(--danger-color, #dc3545); font-weight: 600;">⚠️ Order Cancelled</span>
-                                    <?php else: ?>
-                                        <span style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px;">
-                                            <button disabled class="btn btn-outline" style="opacity: 0.6; cursor: not-allowed; padding: 6px 14px; font-size: 0.85rem;">❌ Cancel Order</button>
-                                            <span style="margin-left: 10px;">Cannot be cancelled (<?= ucfirst($order['status']) ?>)</span>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
+                        <!-- Cancel Button (Only if Pending) -->
+                        <?php if ($normalizedStatus === 'pending'): ?>
+                            <div class="mt-6 flex justify-end border-t border-rose-50 pt-4">
+                                <form method="POST" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                                    <input type="hidden" name="cancel_order_id" value="<?= $order['id'] ?>">
+                                    <button type="submit" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-bold hover:bg-red-50 transition-colors">
+                                        Cancel Order
+                                    </button>
+                                </form>
                             </div>
-                            
-                            <div class="order-summary-box">
-                                <div class="summary-line"><span>Subtotal (<?= count($orderItems[$order['id']]) ?> items)</span> <span>₹<?= number_format($subtotal, 2) ?></span></div>
-                                <div class="summary-line"><span>CGST (9%)</span> <span>₹<?= number_format($gst, 2) ?></span></div>
-                                <div class="summary-line"><span>SGST (9%)</span> <span>₹<?= number_format($sgst, 2) ?></span></div>
-                                <div class="summary-line grand-total"><span>Grand Total</span> <span>₹<?= number_format($order['total_amount'], 2) ?></span></div>
-                            </div>
-                        </div>
-                        
+                        <?php endif; ?>
                     </div>
                 </div>
+                <?php endforeach; ?>
             </div>
-            <?php endforeach; ?>
-        </div>
-        <?php else: ?>
-        <div class="table-card">
-            <div class="empty-state">
-                <div class="empty-icon">📦</div>
-                <h3>No orders yet</h3>
-                <p>Find a nearby shop and place your first order!</p>
-                <a href="shops.php" class="btn btn-primary" style="margin-top:16px;">Browse Shops</a>
-            </div>
-        </div>
         <?php endif; ?>
-    </div>
+    </main>
 </div>
 
-<script>
-// Toggles the order item detail panel open/closed
-function toggleDetail(orderId) {
-    const detail = document.getElementById('detail-' + orderId);
-    detail.classList.toggle('open');
-}
-</script>
-</body>
-</html>
+<!-- Footer -->
+<footer class="bg-stone-100 border-t border-stone-200 mt-auto">
+    <div class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 font-serif text-xs uppercase tracking-widest">
+        <div class="flex flex-col items-center md:items-start gap-4">
+            <span class="text-lg font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</span>
+            <p class="text-stone-500 normal-case tracking-normal text-sm max-w-xs text-center md:text-left">© 2024 Ghanshyam Bakery &amp; Live Cake Shop. Artisanal excellence in every bite.</p>
+        </div>
+        <div class="flex gap-4">
+            <div class="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center text-amber-900 hover:bg-rose-50 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-sm">share</span>
+            </div>
+            <div class="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center text-amber-900 hover:bg-rose-50 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-sm">mail</span>
+            </div>
+        </div>
+    </div>
+</footer>
+</body></html>

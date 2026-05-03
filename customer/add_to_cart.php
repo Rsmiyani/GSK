@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $userId    = $_SESSION['user_id'];
 $productId = (int)($_POST['product_id'] ?? 0);
 $shopId    = (int)($_POST['shop_id']    ?? 0);
+$variantWt = trim($_POST['variant_weight'] ?? '');
 $quantity  = 1; // Always add 1 at a time from the catalog
 
 // Validate
@@ -52,13 +53,13 @@ if ($existingRow = mysqli_fetch_assoc($existingShop)) {
 
 // ─── Insert or Update Cart ────────────────────────────────────────────────────
 // INSERT IGNORE: inserts if the item doesn't exist
-// ON DUPLICATE KEY UPDATE: if same user + product already in cart, just increase qty
+// ON DUPLICATE KEY UPDATE: if same user + product + variant already in cart, just increase qty
 $stmt = mysqli_prepare($conn,
-    "INSERT INTO cart (user_id, product_id, shop_id, quantity)
-     VALUES (?, ?, ?, 1)
+    "INSERT INTO cart (user_id, product_id, shop_id, variant_weight, quantity)
+     VALUES (?, ?, ?, ?, 1)
      ON DUPLICATE KEY UPDATE quantity = quantity + 1"
 );
-mysqli_stmt_bind_param($stmt, 'iii', $userId, $productId, $shopId);
+mysqli_stmt_bind_param($stmt, 'iiis', $userId, $productId, $shopId, $variantWt);
 
 if (mysqli_stmt_execute($stmt)) {
     echo json_encode(['success' => true, 'message' => 'Item added to cart!']);

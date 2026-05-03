@@ -62,7 +62,7 @@ while ($row = mysqli_fetch_assoc($orders)) { $tempOrders[] = $row; }
 
 foreach ($tempOrders as $o) {
     $iRes = mysqli_query($conn,
-        "SELECT oi.quantity, oi.price, p.name, p.image_url, c.name AS category_name
+        "SELECT oi.quantity, oi.price, oi.variant_weight, p.name, p.image_url, c.name AS category_name
          FROM order_items oi 
          JOIN products p ON oi.product_id=p.id 
          LEFT JOIN categories c ON p.category_id=c.id
@@ -258,7 +258,14 @@ $nextStatus = [
                                     <div class="item-image" style="display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#9ca3af;">🎂</div>
                                 <?php endif; ?>
                                 <div class="item-details">
-                                    <div class="item-title"><?=htmlspecialchars($item['name'])?></div>
+                                    <div class="item-title">
+                                        <?=htmlspecialchars($item['name'])?>
+                                        <?php if(!empty($item['variant_weight'])): ?>
+                                            <span style="font-size:0.75rem; font-weight:700; color:var(--accent); background:rgba(var(--accent-rgb),0.1); padding:2px 6px; border-radius:4px; margin-left:5px; border:1px solid rgba(var(--accent-rgb),0.2);">
+                                                <?= htmlspecialchars($item['variant_weight']) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                     <?php if(!empty($item['category_name'])): ?>
                                         <span class="item-category"><?= htmlspecialchars($item['category_name']) ?></span><br>
                                     <?php endif; ?>
