@@ -49,7 +49,16 @@ $shops = [];
 while ($row = mysqli_fetch_assoc($result)) {
     // If we have the user's location, calculate distance to each shop
     if ($userLat && $userLng) {
-        $row['distance'] = haversine($userLat, $userLng, $row['lat'], $row['lng']);
+        $d = haversine($userLat, $userLng, $row['lat'], $row['lng']);
+        $row['distance'] = $d; // numeric in km
+        // Friendly label: show meters if under 1 km
+        if ($d < 1 && $d > 0) {
+            $row['distance_label'] = round($d * 1000) . ' m away';
+        } elseif ($d == 0) {
+            $row['distance_label'] = 'Nearby';
+        } else {
+            $row['distance_label'] = number_format($d, 2) . ' km away';
+        }
     }
     $shops[] = $row;
 }
@@ -181,16 +190,30 @@ if ($userLat && $userLng) {
 
                     <div class="shop-meta">
                         <!-- Show distance if location was detected -->
-                        <?php if (isset($shop['distance'])): ?>
-                        <span class="distance-badge">📏 <?= $shop['distance'] ?> km away</span>
+                        <?php if (isset($shop['distance_label'])): ?>
+                        <span class="distance-badge">📏 <?= htmlspecialchars($shop['distance_label']) ?></span>
                         <?php else: ?>
                         <span class="badge badge-active">✅ Open</span>
                         <?php endif; ?>
 
-                        <!-- Browse This Shop button -->
-                        <a href="shop_detail.php?shop_id=<?= $shop['id'] ?>" class="btn btn-primary btn-sm">
-                            Browse Menu →
-                        </a>
+                        <!-- Actions: Browse + Directions -->
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <a href="shop_detail.php?shop_id=<?= $shop['id'] ?>" class="btn btn-primary btn-sm" style="padding:8px 12px;">Browse Menu →</a>
+                            <?php
+                                // Build Google Maps directions URL. If we have user's coords, include origin so directions are calculated from user's location.
+                                $dest = urlencode($shop['lat'] . ',' . $shop['lng']);
+                                if ($userLat && $userLng) {
+                                    $origin = urlencode($userLat . ',' . $userLng);
+                                    $mapsUrl = "https://www.google.com/maps/dir/?api=1&origin={$origin}&destination={$dest}&travelmode=driving";
+                                } else {
+                                    // No origin: open directions to destination only (Google Maps will use device location if available)
+                                    $mapsUrl = "https://www.google.com/maps/dir/?api=1&destination={$dest}&travelmode=driving";
+                                }
+                            ?>
+                            <a href="<?= $mapsUrl ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="padding:8px 12px;border:1px solid var(--border);background:transparent;color:var(--text-dark);">
+                                ➜ Directions
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <?php endforeach; ?>

@@ -16,6 +16,12 @@ require_once '../config/db.php';
 $shopId = $_SESSION['shop_id'] ?? 0;
 if (!$shopId) { header("Location: dashboard.php"); exit(); }
 
+// Fetch current shop coordinates (used as origin for directions)
+$shopCoords = mysqli_fetch_assoc(mysqli_query($conn, "SELECT lat,lng,name FROM shops WHERE id = $shopId"));
+$shop_lat = $shopCoords['lat'] ?? null;
+$shop_lng = $shopCoords['lng'] ?? null;
+$shop_name = $shopCoords['name'] ?? '';
+
 $message = '';
 
 // ─── Handle Status Update (POST) ─────────────────────────────────────────────
@@ -110,16 +116,16 @@ $nextStatus = [
 .order-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 
 /* Status Timeline */
-.status-timeline { display: flex; justify-content: space-between; position: relative; margin: 10px 0 20px 0; padding: 0 10px; }
-.status-timeline::before { content: ''; position: absolute; top: 15px; left: 25px; right: 25px; height: 3px; background: #e2e8f0; z-index: 1; border-radius: 3px; }
-.status-timeline[data-progress="50"]::before { background: linear-gradient(to right, var(--primary-color) 50%, #e2e8f0 50%); }
-.status-timeline[data-progress="100"]::before { background: var(--primary-color); }
-.timeline-step { position: relative; z-index: 2; text-align: center; flex: 1; }
+.status-timeline { display: flex; justify-content: space-between; position: relative; margin: 10px 0 20px 0; padding: 0 10px; gap: 8px; }
+.timeline-step { position: relative; z-index: 2; text-align: center; flex: 1; display: flex; flex-direction: column; align-items: center; }
+.timeline-step:not(:last-child)::after { content: ''; position: absolute; top: 17px; left: 50%; width: 100%; height: 3px; background: #e2e8f0; z-index: -1; border-radius: 3px; }
+.timeline-step.completed:not(:last-child)::after { background: var(--success); }
+.timeline-step.active:not(:last-child)::after { background: linear-gradient(to right, var(--accent) 50%, #e2e8f0 50%); }
 .timeline-icon { width: 34px; height: 34px; border-radius: 50%; background: #fff; border: 3px solid #e2e8f0; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px auto; color: #94a3b8; font-size: 14px; transition: all 0.3s; box-shadow: 0 0 0 4px white; }
-.timeline-step.active .timeline-icon { border-color: var(--primary-color); background: var(--primary-color); color: white; }
-.timeline-step.completed .timeline-icon { border-color: var(--primary-color); color: var(--primary-color); }
+.timeline-step.active .timeline-icon { border-color: var(--accent); background: var(--accent); color: white; }
+.timeline-step.completed .timeline-icon { border-color: var(--success); color: var(--success); }
 .timeline-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
-.timeline-step.active .timeline-label { color: var(--primary-color); }
+.timeline-step.active .timeline-label { color: var(--accent); }
 .timeline-cancelled { width: 100%; text-align: center; color: #ef4444; font-weight: 600; padding: 15px; background: #fee2e2; border-radius: 8px; border: 1px dashed #f87171; }
 
 /* Items Grid */
@@ -160,6 +166,7 @@ $nextStatus = [
         <a href="dashboard.php"><span class="nav-icon">🏠</span> Dashboard</a>
         <a href="products.php"><span class="nav-icon">🎂</span> My Products</a>
         <a href="orders.php" class="active"><span class="nav-icon">📦</span> Orders</a>
+        <a href="analytics.php"><span class="nav-icon">📊</span> Analytics</a>
     </nav>
     <div class="sidebar-footer"><a href="../logout.php"><span>🚪</span> Logout</a></div>
 </aside>
@@ -277,7 +284,45 @@ $nextStatus = [
                                         ⏰ <?=date('h:i A',strtotime($o['pickup_time']))?>
                                     <?php else:?>
                                         <strong>🚚 Delivery Address:</strong><br>
-                                        <?=nl2br(htmlspecialchars($o['delivery_address']))?>
+                                            <?=nl2br(htmlspecialchars($o['delivery_address']))?>
+                                            <?php
+                                                // Build a Google Maps link for the customer's delivery location.
+                                                $mapsUrl = '';
+                                                $addr = trim($o['delivery_address'] ?? '');
+                                                if (!empty($addr)) {
+                                                    // Detect if the address looks like coordinates: "lat,lng" (numbers)
+                                                    $coord = null;
+                                                    if (preg_match('/^\s*([+-]?\d{1,3}\.\d+)\s*,\s*([+-]?\d{1,3}\.\d+)\s*$/', $addr, $m)) {
+                                                        $coord = $m[1] . ',' . $m[2];
+                                                    }
+
+                                                    // If we have coords from the address, use them as destination; otherwise use the text query
+                                                    if ($coord) {
+                                                        // If shop coordinates available, provide directions from shop to customer coords
+                                                        if (!empty($shop_lat) && !empty($shop_lng)) {
+                                                            $origin = urlencode($shop_lat . ',' . $shop_lng);
+                                                            $destination = urlencode($coord);
+                                                            $mapsUrl = "https://www.google.com/maps/dir/?api=1&origin={$origin}&destination={$destination}&travelmode=driving";
+                                                        } else {
+                                                            $mapsUrl = "https://www.google.com/maps/search/?api=1&query=" . urlencode($coord);
+                                                        }
+                                                    } else {
+                                                        // Non-coordinate address: search/query it on Google Maps. Prefer directions if shop coords exist.
+                                                        $query = urlencode(preg_replace('/\s+/', ' ', $addr));
+                                                        if (!empty($shop_lat) && !empty($shop_lng)) {
+                                                            $origin = urlencode($shop_lat . ',' . $shop_lng);
+                                                            $mapsUrl = "https://www.google.com/maps/dir/?api=1&origin={$origin}&destination={$query}&travelmode=driving";
+                                                        } else {
+                                                            $mapsUrl = "https://www.google.com/maps/search/?api=1&query={$query}";
+                                                        }
+                                                    }
+                                                }
+                                            ?>
+                                            <?php if (!empty($mapsUrl)): ?>
+                                                <div style="margin-top:8px;">
+                                                    <a href="<?= htmlspecialchars($mapsUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="padding:6px 10px;">📍 Location</a>
+                                                </div>
+                                            <?php endif; ?>
                                     <?php endif;?>
                                 </div>
 

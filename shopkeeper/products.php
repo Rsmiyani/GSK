@@ -105,6 +105,7 @@ $products = mysqli_query($conn,
         <a href="dashboard.php"><span class="nav-icon">🏠</span> Dashboard</a>
         <a href="products.php" class="active"><span class="nav-icon">🎂</span> My Products</a>
         <a href="orders.php"><span class="nav-icon">📦</span> Orders</a>
+        <a href="analytics.php"><span class="nav-icon">📊</span> Analytics</a>
     </nav>
     <div class="sidebar-footer"><a href="../logout.php"><span>🚪</span> Logout</a></div>
 </aside>

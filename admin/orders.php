@@ -39,6 +39,7 @@ $totalRevenue = mysqli_fetch_assoc(mysqli_query($conn,"SELECT SUM(total_amount) 
         <a href="shops.php"><span class="nav-icon">🏪</span> Manage Shops</a>
         <a href="users.php"><span class="nav-icon">👥</span> Manage Users</a>
         <a href="orders.php" class="active"><span class="nav-icon">📦</span> All Orders</a>
+        <a href="analytics.php"><span class="nav-icon">📊</span> Analytics</a>
     </nav>
     <div class="sidebar-footer"><a href="../logout.php"><span>🚪</span> Logout</a></div>
 </aside>

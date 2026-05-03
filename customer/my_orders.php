@@ -88,6 +88,7 @@ $statusColors = [
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
     <style>
+        :root { --primary-color: var(--accent); }
         /* Modern Card-based Order Layout */
         .order-card {
             background: white;
@@ -140,55 +141,79 @@ $statusColors = [
         .status-timeline {
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
             position: relative;
-            margin: 10px 0 20px 0;
-            padding: 0 10px;
+            margin: 12px 0 22px 0;
+            padding: 6px 6px 0;
+            gap: 8px;
         }
-        .status-timeline::before {
-            content: '';
-            position: absolute;
-            top: 15px;
-            left: 25px;
-            right: 25px;
-            height: 3px;
-            background: #e2e8f0;
-            z-index: 1;
-            border-radius: 3px;
-        }
-        /* Highlight active progress line */
-        .status-timeline[data-progress="50"]::before { background: linear-gradient(to right, var(--primary-color) 50%, #e2e8f0 50%); }
-        .status-timeline[data-progress="100"]::before { background: var(--primary-color); }
 
         .timeline-step {
             position: relative;
             z-index: 2;
             text-align: center;
             flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .timeline-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 22px;
+            left: 50%;
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            z-index: -1;
+            border-radius: 999px;
+        }
+
+        .timeline-step.completed:not(:last-child)::after {
+            background: var(--success);
+        }
+
+        .timeline-step.active:not(:last-child)::after {
+            background: linear-gradient(to right, var(--accent) 50%, #e2e8f0 50%);
         }
         .timeline-icon {
-            width: 34px;
-            height: 34px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             background: #fff;
-            border: 3px solid #e2e8f0;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 8px auto;
+            border: 2px solid #dbe4ef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #94a3b8;
-            font-size: 14px;
-            transition: all 0.3s;
-            box-shadow: 0 0 0 4px white;
+            font-size: 16px;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06), 0 0 0 5px white;
         }
         .timeline-step.active .timeline-icon {
-            border-color: var(--primary-color);
-            background: var(--primary-color);
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--accent), #fb7185);
             color: white;
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 12px 26px rgba(233, 30, 140, 0.24), 0 0 0 5px white;
         }
         .timeline-step.completed .timeline-icon {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
+            border-color: #bbf7d0;
+            background: #ecfdf5;
+            color: #059669;
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.12), 0 0 0 5px white;
         }
-        .timeline-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
-        .timeline-step.active .timeline-label { color: var(--primary-color); }
+        .timeline-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            line-height: 1.25;
+        }
+        .timeline-step.active .timeline-label { color: var(--accent); }
+        .timeline-step.completed .timeline-label { color: #047857; }
         
         .timeline-cancelled { width: 100%; text-align: center; color: #ef4444; font-weight: 600; padding: 15px; background: #fee2e2; border-radius: 8px; border: 1px dashed #f87171; }
 

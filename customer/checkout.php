@@ -112,9 +112,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         .checkout-layout { display: grid; grid-template-columns: 1fr 300px; gap: 24px; }
-        /* Delivery / Pickup toggle tabs */
         .type-tabs { display: flex; gap: 12px; margin-bottom: 24px; }
         .type-tab {
             flex: 1; padding: 18px; border: 2px solid var(--border);
@@ -125,9 +126,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .type-tab .tab-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
         .type-tab h3 { font-size: 1rem; font-weight: 700; }
         .type-tab p  { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
-        /* Show/hide delivery vs pickup fields */
         .delivery-section, .pickup-section { display: none; }
         .delivery-section.show, .pickup-section.show { display: block; }
+
+        /* Address Mode Tabs */
+        .addr-tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+        .addr-tab {
+            padding: 9px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+            border: 1.5px solid var(--border); background: white; color: var(--text-muted);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .addr-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .addr-tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+        /* Map */
+        #delivery-map { width: 100%; height: 320px; border-radius: 12px; border: 1.5px solid var(--border); margin-bottom: 12px; z-index: 1; }
+        .map-search-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+        .map-search-bar input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.88rem; }
+        .map-search-bar input:focus { outline: none; border-color: var(--accent); }
+        .map-search-bar button { padding: 10px 16px; border: none; background: var(--accent); color: white; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+        .map-address-preview {
+            display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+            background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25);
+            border-radius: 10px; font-size: 0.85rem; color: #065f46;
+        }
+        .preview-icon { font-size: 1.2rem; }
+
         @media(max-width:768px) { .checkout-layout { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -196,13 +220,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <!-- Step 2a: Delivery Address (shown only when Delivery is selected) -->
                     <div class="table-card delivery-section" id="delivery-section">
                         <h2 style="margin-bottom:16px;font-size:1.05rem;font-weight:700;">Step 2: Delivery Address</h2>
-                        <div class="form-group">
-                            <label>Your Full Delivery Address</label>
-                            <textarea name="delivery_address" rows="3"
-                                placeholder="House No., Street, Area, City, Pincode"
-                                style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;resize:vertical;"
-                            ></textarea>
+
+                        <!-- Address Mode Tabs -->
+                        <div class="addr-tabs">
+                            <button type="button" class="addr-tab active" onclick="switchAddrMode('manual',this)">✍️ Type Address</button>
+                            <button type="button" class="addr-tab" onclick="switchAddrMode('map',this)">🗺️ Pick on Map</button>
                         </div>
+
+                        <!-- Mode 1: Manual typing -->
+                        <div class="addr-mode" id="mode-manual">
+                            <div class="form-group">
+                                <label>Your Full Delivery Address</label>
+                                <textarea id="addr-textarea" name="delivery_address" rows="3"
+                                    placeholder="House No., Street, Area, City, Pincode"
+                                    style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;resize:vertical;"
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Mode 2: Map picker -->
+                        <div class="addr-mode" id="mode-map" style="display:none;">
+                            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">🖱️ Click on the map or drag the pin to select your delivery location.</p>
+                            <div class="map-search-bar">
+                                <input type="text" id="map-search-input" placeholder="Search for a place..." />
+                                <button type="button" id="map-search-btn" onclick="searchPlace()">🔍</button>
+                            </div>
+                            <div id="delivery-map"></div>
+                            <div class="map-address-preview" id="map-address-preview" style="display:none;">
+                                <span class="preview-icon">📍</span>
+                                <span id="map-address-text"></span>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Step 2b: Pickup Date + Time (shown only when Pickup is selected) -->
@@ -264,29 +313,109 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-/**
- * selectType(type)
- * ================
- * Handles the delivery / pickup tab toggle.
- * Shows the relevant form section and updates the hidden input.
- */
+// ─── Delivery / Pickup Toggle ────────────────────────────────────────────────
 function selectType(type) {
-    // Update hidden input value
     document.getElementById('order_type').value = type;
-
-    // Remove 'selected' from both tabs then add to the clicked one
     document.getElementById('tab-delivery').classList.remove('selected');
     document.getElementById('tab-pickup').classList.remove('selected');
     document.getElementById('tab-' + type).classList.add('selected');
-
-    // Show/hide the correct form section
     document.getElementById('delivery-section').classList.toggle('show', type === 'delivery');
     document.getElementById('pickup-section').classList.toggle('show', type === 'pickup');
-
-    // Enable the submit button
     const btn = document.getElementById('place-btn');
     btn.disabled = false;
     btn.textContent = '🎂 Place Order';
+
+    // Initialize map if switching to delivery and map mode is active
+    if (type === 'delivery' && document.getElementById('mode-map').style.display !== 'none') {
+        setTimeout(initMap, 200);
+    }
+}
+
+// ─── Address Mode Switcher ───────────────────────────────────────────────────
+function switchAddrMode(mode, btn) {
+    document.querySelectorAll('.addr-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.addr-mode').forEach(m => m.style.display = 'none');
+    document.getElementById('mode-' + mode).style.display = 'block';
+    if (mode === 'map') setTimeout(initMap, 200);
+}
+
+// ─── MAP MODE (Leaflet + OpenStreetMap) ──────────────────────────────────────
+let map = null, marker = null, mapReady = false;
+
+function initMap() {
+    if (mapReady && map) { map.invalidateSize(); return; }
+    // Default: Rajkot, Gujarat
+    const defaultLat = <?= $shop['lat'] ?? 22.3039 ?>;
+    const defaultLng = <?= $shop['lng'] ?? 70.8022 ?>;
+
+    map = L.map('delivery-map').setView([defaultLat, defaultLng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors', maxZoom: 19
+    }).addTo(map);
+
+    marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+
+    // On marker drag end → reverse geocode
+    marker.on('dragend', function() {
+        const ll = marker.getLatLng();
+        reverseGeocode(ll.lat, ll.lng);
+    });
+
+    // On map click → move marker & reverse geocode
+    map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+    });
+
+    mapReady = true;
+}
+
+function searchPlace() {
+    const q = document.getElementById('map-search-input').value.trim();
+    if (!q) return;
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=1')
+        .then(r => r.json())
+        .then(data => {
+            if (data.length > 0) {
+                const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+                map.setView([lat, lng], 16);
+                marker.setLatLng([lat, lng]);
+                reverseGeocode(lat, lng);
+            } else {
+                alert('Location not found. Try a different search term.');
+            }
+        }).catch(() => alert('Search failed. Check your internet connection.'));
+}
+
+// Enter key in search
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('map-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); searchPlace(); }
+        });
+    }
+});
+
+function reverseGeocode(lat, lng) {
+    fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng)
+        .then(r => r.json())
+        .then(data => {
+            const addr = data.display_name || (lat.toFixed(6) + ', ' + lng.toFixed(6));
+            setAddress(addr);
+            document.getElementById('map-address-preview').style.display = 'flex';
+            document.getElementById('map-address-text').textContent = addr;
+        }).catch(() => {
+            const fallback = lat.toFixed(6) + ', ' + lng.toFixed(6);
+            setAddress(fallback);
+        });
+}
+
+
+// ─── Shared: Set the address textarea value ──────────────────────────────────
+function setAddress(addr) {
+    document.getElementById('addr-textarea').value = addr;
 }
 </script>
 </body>

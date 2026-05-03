@@ -57,15 +57,17 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
         .detail-row { display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size:0.9rem; }
         .detail-row:last-child { border-bottom: none; }
         /* Order status timeline */
-        .status-timeline { display:flex; justify-content:center; gap:0; margin: 24px 0; }
-        .status-step { flex:1; text-align:center; font-size:0.72rem; color:var(--text-muted); }
+        .status-timeline { display:flex; justify-content:space-between; margin: 24px 0; gap: 8px; }
+        .status-step { position:relative; flex:1; text-align:center; font-size:0.72rem; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; }
+        .status-step:not(:last-child)::after { content: ''; position: absolute; top: 14px; left: 50%; width: 100%; height: 3px; background: var(--border); z-index: -1; }
+        .status-step.done:not(:last-child)::after { background: var(--accent); }
         .status-step .dot {
             width:28px; height:28px; border-radius:50%;
             background: var(--border); margin: 0 auto 6px;
             display:flex; align-items:center; justify-content:center; font-size:0.85rem;
+            border: 2px solid white; box-shadow: 0 0 0 2px var(--body-bg); z-index: 2;
         }
-        .status-step.done .dot { background: var(--accent); }
-        .status-step .line { height:2px; background:var(--border); margin-top:-17px; }
+        .status-step.done .dot { background: var(--accent); color: white; }
     </style>
 </head>
 <body class="dashboard-body">
