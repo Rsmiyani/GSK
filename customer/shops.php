@@ -154,8 +154,8 @@ if ($userLat && $userLng) {
                 <h1 class="font-headline-lg text-amber-950">Nearby Branches</h1>
                 <p class="text-body-md text-stone-500 mt-2" id="location-status">Pick up your fresh delights from these locations</p>
             </div>
-            <button onclick="detectLocation()" id="locate-btn" class="bg-primary-container text-on-primary-container px-5 py-2 rounded-lg font-label-md hover:bg-secondary hover:text-white transition-colors flex items-center gap-2 shadow-sm">
-                <span class="material-symbols-outlined text-sm">my_location</span> Sort by Distance
+            <button onclick="detectLocation(true)" id="locate-btn" class="bg-secondary text-white px-6 py-3 rounded-lg font-label-md hover:bg-on-secondary-fixed-variant transition-colors flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95 duration-200">
+                <span class="material-symbols-outlined text-base">my_location</span> <span class="font-semibold">Detect My Location</span>
             </button>
         </div>
 
