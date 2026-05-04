@@ -2,29 +2,38 @@
 /**
  * customer/shop_detail.php
  * ========================
- * SHOP DETAIL / CAKE CATALOG PAGE - Sweet Artisans Theme
+ * SHOP DETAIL / CAKE CATALOG PAGE
+ * 
+ * This page displays all products (cakes) available at a specific bakery branch.
+ * It handles category filtering and complex weight-based variant pricing.
+ * 
+ * FEATURES:
+ *   - Automatic redirection if shop ID is missing or invalid.
+ *   - Categorized product listing with a "Tabs" filter interface.
+ *   - Dynamic pricing: Selecting a different weight (e.g., 500g vs 1kg) 
+ *     instantly updates the price on the UI via JavaScript.
+ *   - AJAX-based "Add to Cart" with toast notifications.
  */
 
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'customer';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Customer-only access
+require_once '../config/db.php';           // Database connection ($conn)
 
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
 $userInitial = strtoupper(substr($userName, 0, 1));
 
-// ─── Get Shop ID from URL ─────────────────────────────────────────────────────
-$shopId = isset($_GET['shop_id']) ? (int)$_GET['shop_id'] : 0;
-if ($shopId === 0) {
-    // some links use id instead of shop_id
-    $shopId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-}
+// ─── Identify the Shop ────────────────────────────────────────────────────────
+// Support both ?shop_id=X and ?id=X (for backwards compatibility with links)
+$shopId = isset($_GET['shop_id']) ? (int)$_GET['shop_id'] : (isset($_GET['id']) ? (int)$_GET['id'] : 0);
 
 if ($shopId === 0) {
-    header("Location: shops.php");
+    header("Location: shops.php"); // No shop selected? Send them back to the list
     exit();
 }
 
+// Fetch shop basic info using a prepared statement for security
 $shopStmt = mysqli_prepare($conn, "SELECT * FROM shops WHERE id = ? AND is_active = 1");
 mysqli_stmt_bind_param($shopStmt, 'i', $shopId);
 mysqli_stmt_execute($shopStmt);
@@ -32,10 +41,16 @@ $shopResult = mysqli_stmt_get_result($shopStmt);
 $shop = mysqli_fetch_assoc($shopResult);
 
 if (!$shop) {
+    // If shop ID doesn't exist or shop is disabled, redirect with an error
     header("Location: shops.php?error=Shop+not+found");
     exit();
 }
 
+// ─── Load Products & Categories ───────────────────────────────────────────────
+/**
+ * Query for all products belonging to this shop that are currently "In Stock".
+ * We LEFT JOIN categories to group the items logically (e.g., "Eggless Cakes", "Pastries").
+ */
 $productsResult = mysqli_query($conn,
     "SELECT p.*, c.name AS category_name 
      FROM products p 
@@ -49,22 +64,34 @@ $categories = [];
 $productIdsWithVariants = [];
 
 while ($row = mysqli_fetch_assoc($productsResult)) {
+    // Collect unique category names for the filter tabs
     $cat = $row['category_name'] ?? 'Uncategorized';
     if (!in_array($cat, $categories)) {
         $categories[] = $cat;
     }
+    
     $row['category_name'] = $cat;
-    $row['variants'] = [];
+    $row['variants'] = []; // Initialize an empty array to hold weight variants later
+    
+    // If this cake has variants (500g, 1kg, etc.), keep its ID to fetch them in one batch
     if ($row['has_variants']) {
         $productIdsWithVariants[] = $row['id'];
     }
+    
+    // Key the array by product ID for easy access
     $products[$row['id']] = $row;
 }
 
+// ─── Fetch Product Variants ──────────────────────────────────────────────────
+/**
+ * If any products have weight variants, fetch them all in a single query (WHERE id IN (...)).
+ * This is much more efficient than querying variants for every single product in a loop.
+ */
 if (!empty($productIdsWithVariants)) {
     $idList = implode(',', $productIdsWithVariants);
     $varRes = mysqli_query($conn, "SELECT * FROM product_variants WHERE product_id IN ($idList) ORDER BY CASE weight_label WHEN '500g' THEN 1 WHEN '1kg' THEN 2 WHEN '2kg' THEN 3 WHEN '3kg' THEN 4 WHEN '4kg' THEN 5 WHEN '5kg' THEN 6 WHEN '6kg' THEN 7 ELSE 8 END");
     while ($v = mysqli_fetch_assoc($varRes)) {
+        // Assign the variant to the corresponding product
         $products[$v['product_id']]['variants'][] = $v;
     }
 }
@@ -74,9 +101,11 @@ if (!empty($productIdsWithVariants)) {
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title><?= htmlspecialchars($shop['name']) ?> - Ghanshyam Bakery &amp; Live Cake Shop</title>
+    <title><?= htmlspecialchars($shop['name']) ?> - Ghanshyam Bakery</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Custom Theme Tokens (Consistent across customer portal) -->
     <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -109,28 +138,28 @@ if (!empty($productIdsWithVariants)) {
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Toast notification */
+        /* Floating Toast notification styling */
         .toast {
             position: fixed; bottom: 30px; right: 30px;
             background: var(--color-on-primary-container, #765e61); color: white;
             padding: 14px 22px; border-radius: 10px;
             font-weight: 600; font-size: 0.9rem;
             box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            transform: translateX(200%);
+            transform: translateX(200%); /* Start off-screen */
             transition: transform 0.4s ease;
             z-index: 999;
         }
-        .toast.show { transform: translateX(0); }
+        .toast.show { transform: translateX(0); } /* Slide in */
         .btn-cart.loading { opacity: 0.7; pointer-events: none; }
     </style>
 </head>
 <body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex flex-col">
 
-<!-- TopNavBar -->
+<!-- ═══ TOP NAVBAR ═══════════════════════════════════════════════════════════ -->
 <header class="bg-stone-50 border-b border-rose-100 shadow-sm shadow-amber-900/5 sticky top-0 z-50">
     <nav class="flex justify-between items-center w-full px-8 py-4 font-serif text-base tracking-tight">
         <div class="flex items-center gap-6">
-            <img src="../assets/logo/image.png" alt="Ghanshyam Bakery Logo" class="w-10 h-10 object-cover rounded-md"/>
+            <img src="../assets/logo/image.png" alt="Logo" class="w-10 h-10 object-cover rounded-md"/>
             <div>
                 <div class="text-2xl font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</div>
                 <div class="text-sm text-stone-500">Bringing your nearest cake shop just a click away.</div>
@@ -156,7 +185,7 @@ if (!empty($productIdsWithVariants)) {
 </header>
 
 <div class="flex w-full">
-    <!-- SideNavBar -->
+    <!-- ═══ SIDEBAR NAVIGATION ══════════════════════════════════════════════════ -->
     <aside class="hidden lg:flex flex-col h-[calc(100vh-80px)] w-72 bg-white border-r border-rose-50 shadow-lg shadow-amber-900/5 sticky top-20 p-6 space-y-2 font-serif text-sm font-medium">
         <div class="mb-8">
             <div class="flex items-center gap-3 mb-2">
@@ -181,9 +210,10 @@ if (!empty($productIdsWithVariants)) {
         </a>
     </aside>
 
-    <!-- Main Content -->
+    <!-- ═══ MAIN CONTENT: PRODUCT CATALOG ══════════════════════════════════════ -->
     <main class="flex-1 p-8 overflow-x-hidden">
         
+        <!-- Breadcrumbs & Shop Header -->
         <div class="mb-8">
             <div class="flex items-center gap-2 text-sm text-stone-500 mb-4">
                 <a href="dashboard.php" class="hover:text-secondary transition-colors">Home</a>
@@ -205,9 +235,10 @@ if (!empty($productIdsWithVariants)) {
                 </a>
             </div>
             
-            <!-- Category Filters -->
+            <!-- Category Filter Tabs -->
             <?php if (count($categories) > 0): ?>
             <div class="flex gap-3 mb-8 overflow-x-auto hide-scrollbar pb-2">
+                <!-- "All Treats" tab is active by default -->
                 <button class="cat-tab px-5 py-2 rounded-full font-label-md transition-colors bg-secondary text-white shadow-sm" data-cat="all" onclick="filterCategory('all', this)">All Treats</button>
                 <?php foreach ($categories as $cat): ?>
                     <button class="cat-tab px-5 py-2 rounded-full font-label-md transition-colors bg-white text-stone-600 border border-stone-200 hover:bg-rose-50" data-cat="<?= htmlspecialchars($cat) ?>" onclick="filterCategory('<?= htmlspecialchars($cat) ?>', this)">
@@ -218,11 +249,13 @@ if (!empty($productIdsWithVariants)) {
             <?php endif; ?>
         </div>
 
+        <!-- Product Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="productGrid">
             <?php if (count($products) > 0): ?>
                 <?php foreach ($products as $product): ?>
-                <!-- Product Card -->
+                <!-- Individual Product Card -->
                 <div id="product_<?= $product['id'] ?>" class="product-card bg-white rounded-xl overflow-hidden border border-rose-50 ambient-shadow group flex flex-col" data-category="<?= htmlspecialchars($product['category_name']) ?>">
+                    <!-- Card Header: Image & Category Badge -->
                     <div class="aspect-video bg-rose-50 flex items-center justify-center relative overflow-hidden">
                         <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                              src="<?= htmlspecialchars($product['image_url'] ?: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80') ?>" 
@@ -235,6 +268,7 @@ if (!empty($productIdsWithVariants)) {
                         </div>
                     </div>
                     
+                    <!-- Card Body -->
                     <div class="p-5 flex-1 flex flex-col">
                         <h3 class="font-headline-sm text-lg text-amber-950 mb-2"><?= htmlspecialchars($product['name']) ?></h3>
                         <?php if (!empty($product['flavor'])): ?>
@@ -242,10 +276,13 @@ if (!empty($productIdsWithVariants)) {
                         <?php endif; ?>
                         <p class="text-sm text-stone-500 mb-6 flex-1"><?= htmlspecialchars($product['description']) ?></p>
                         
+                        <!-- Weight Selection & Pricing -->
                         <div class="flex flex-col mt-auto gap-4">
                             <?php if ($product['has_variants'] && !empty($product['variants'])): ?>
+                                <!-- Dropdown for weight variants (e.g., 500g, 1kg) -->
                                 <select id="variant_select_<?= $product['id'] ?>" class="w-full text-sm border-stone-200 rounded-lg focus:ring-secondary focus:border-secondary text-stone-600" onchange="updatePrice(<?= $product['id'] ?>)">
                                     <?php foreach ($product['variants'] as $i => $v): ?>
+                                        <!-- Each option stores the price in a data attribute for the JS updater -->
                                         <option value="<?= htmlspecialchars($v['weight_label']) ?>" data-price="<?= $v['price'] ?>">
                                             <?= htmlspecialchars($v['weight_label']) ?> - ₹<?= number_format($v['price'], 2) ?>
                                         </option>
@@ -254,12 +291,14 @@ if (!empty($productIdsWithVariants)) {
                             <?php endif; ?>
                             
                             <div class="flex justify-between items-center">
+                                <!-- Price Display: For variants, this is updated by updatePrice() JS -->
                                 <?php if ($product['has_variants'] && !empty($product['variants'])): ?>
                                     <span class="font-headline-sm text-xl text-secondary" id="price_display_<?= $product['id'] ?>">₹<?= number_format($product['variants'][0]['price'], 2) ?></span>
                                 <?php else: ?>
                                     <span class="font-headline-sm text-xl text-secondary">₹<?= number_format($product['price'], 2) ?></span>
                                 <?php endif; ?>
                                 
+                                <!-- Add to Cart Button -->
                                 <button class="btn-cart flex items-center justify-center gap-1 bg-surface-container hover:bg-secondary hover:text-white text-secondary px-4 py-2 rounded-lg font-label-md transition-colors" onclick="addToCart(<?= $product['id'] ?>, <?= $shopId ?>, this, <?= $product['has_variants'] ? 'true' : 'false' ?>)">
                                     <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span> Add
                                 </button>
@@ -269,6 +308,7 @@ if (!empty($productIdsWithVariants)) {
                 </div>
                 <?php endforeach; ?>
             <?php else: ?>
+                <!-- Empty State -->
                 <div class="col-span-full bg-white rounded-xl py-16 px-8 text-center border border-rose-50 ambient-shadow">
                     <span class="material-symbols-outlined text-4xl text-stone-300 mb-4">cake</span>
                     <h3 class="font-headline-sm text-amber-950 mb-2">No items available right now</h3>
@@ -280,10 +320,10 @@ if (!empty($productIdsWithVariants)) {
     </main>
 </div>
 
-<!-- Toast notification popup -->
+<!-- Floating Toast notification popup (slides in from the bottom-right) -->
 <div class="toast" id="toast">✅ Added to cart!</div>
 
-<!-- Footer -->
+<!-- ═══ FOOTER ═══════════════════════════════════════════════════════════════ -->
 <footer class="bg-stone-100 border-t border-stone-200 mt-auto">
     <div class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 font-serif text-xs uppercase tracking-widest">
         <div class="flex flex-col items-center md:items-start gap-4">
@@ -301,7 +341,14 @@ if (!empty($productIdsWithVariants)) {
     </div>
 </footer>
 
+<!-- ═══ CLIENT-SIDE SCRIPTS ══════════════════════════════════════════════════ -->
 <script>
+/**
+ * updatePrice(productId)
+ * =====================
+ * Updates the price displayed on the card when a user changes the weight dropdown.
+ * Reads the 'data-price' attribute from the selected <option>.
+ */
 function updatePrice(productId) {
     const select = document.getElementById('variant_select_' + productId);
     if (!select) return;
@@ -309,16 +356,24 @@ function updatePrice(productId) {
     const price = parseFloat(option.getAttribute('data-price'));
     const display = document.getElementById('price_display_' + productId);
     if (display) {
+        // Format as Indian Rupee (₹) with 2 decimal places
         display.innerText = '₹' + price.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 }
 
+/**
+ * addToCart(productId, shopId, button, hasVariants)
+ * ================================================
+ * Adds a cake to the customer's shopping cart using AJAX.
+ */
 function addToCart(productId, shopId, button, hasVariants) {
     const originalText = button.innerHTML;
-    button.classList.add('loading');
+    button.classList.add('loading'); // Show spinner/disable interactions
     button.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Adding...';
 
     let bodyData = `product_id=${productId}&shop_id=${shopId}`;
+    
+    // If it's a variant cake, include the currently selected weight
     if (hasVariants) {
         const select = document.getElementById('variant_select_' + productId);
         if (select) {
@@ -334,17 +389,21 @@ function addToCart(productId, shopId, button, hasVariants) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // SUCCESS UI: Show toast, change button color briefly to green
             showToast('✅ ' + data.message, 'success');
             button.innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span> Added';
             button.classList.replace('bg-surface-container', 'bg-green-100');
             button.classList.replace('text-secondary', 'text-green-700');
+            
             setTimeout(() => {
+                // Revert button to original state after 2 seconds
                 button.innerHTML = originalText;
                 button.classList.replace('bg-green-100', 'bg-surface-container');
                 button.classList.replace('text-green-700', 'text-secondary');
                 button.classList.remove('loading');
             }, 2000);
         } else {
+            // ERROR UI: Show red toast with server-side message
             showToast('❌ ' + data.message, 'error');
             button.innerHTML = originalText;
             button.classList.remove('loading');
@@ -357,22 +416,36 @@ function addToCart(productId, shopId, button, hasVariants) {
     });
 }
 
+/**
+ * showToast(msg, type)
+ * ====================
+ * Utility function to display the floating notification at the bottom-right.
+ */
 function showToast(msg, type = 'success') {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
-    toast.style.background = type === 'error' ? '#ba1a1a' : '#70585b';
+    toast.style.background = type === 'error' ? '#ba1a1a' : '#70585b'; // Red for error, Brown for success
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    setTimeout(() => toast.classList.remove('show'), 3000); // Hide after 3 seconds
 }
 
+/**
+ * filterCategory(categoryName, btn)
+ * =================================
+ * Filters the product grid based on category selection without reloading the page.
+ * Uses 'display: none' on non-matching elements.
+ */
 function filterCategory(categoryName, btn) {
+    // Reset all tabs to the 'inactive' state
     document.querySelectorAll('.cat-tab').forEach(t => {
         t.className = 'cat-tab px-5 py-2 rounded-full font-label-md transition-colors bg-white text-stone-600 border border-stone-200 hover:bg-rose-50';
     });
+    // Set clicked tab to 'active' state
     btn.className = 'cat-tab px-5 py-2 rounded-full font-label-md transition-colors bg-secondary text-white shadow-sm';
 
     const cards = document.querySelectorAll('.product-card');
     cards.forEach(card => {
+        // Show if 'all' is selected OR if the card's category matches
         if (categoryName === 'all' || card.getAttribute('data-category') === categoryName) {
             card.style.display = 'flex';
         } else {

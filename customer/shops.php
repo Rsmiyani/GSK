@@ -2,37 +2,66 @@
 /**
  * customer/shops.php
  * ==================
- * NEARBY SHOPS PAGE - Sweet Artisans Theme
+ * FIND NEARBY SHOPS PAGE
+ * 
+ * This page allows customers to find the nearest Ghanshyam Bakery branches.
+ * It uses the browser's Geolocation API to detect the user's current coordinates
+ * and calculates the distance to each shop using the Haversine formula.
+ * 
+ * FEATURES:
+ *   - Automatic/Manual location detection.
+ *   - Sorting shops by distance (closest first).
+ *   - "Get Directions" link that opens Google Maps with the route.
  */
 
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'customer';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Ensures customer-only access
+require_once '../config/db.php';           // Database connection ($conn)
 
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
-$userInitial = strtoupper(substr($userName, 0, 1));
+$userInitial = strtoupper(substr($userName, 0, 1)); // Avatar initial
 
 // ─── Haversine Distance Function ──────────────────────────────────────────────
+/**
+ * haversine($lat1, $lng1, $lat2, $lng2)
+ * =====================================
+ * Calculates the great-circle distance between two points on a sphere.
+ * Used here to find the distance (in km) between the user and a shop.
+ * 
+ * Formula: a = sin²(Δlat/2) + cos(lat1) * cos(lat2) * sin²(Δlng/2)
+ *          c = 2 * atan2(√a, √(1-a))
+ *          d = R * c (where R is Earth radius = 6371km)
+ */
 function haversine($lat1, $lng1, $lat2, $lng2) {
-    $R = 6371;
+    $R = 6371; // Earth's radius in kilometers
     $dLat = deg2rad($lat2 - $lat1);
     $dLng = deg2rad($lng2 - $lng1);
     $a = sin($dLat/2) * sin($dLat/2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng/2) * sin($dLng/2);
     $c = 2 * atan2(sqrt($a), sqrt(1-$a));
-    return round($R * $c, 2);
+    return round($R * $c, 2); // Return distance rounded to 2 decimal places
 }
 
+// ─── User Coordinates ─────────────────────────────────────────────────────────
+// Read lat/lng from URL parameters (set by the detectLocation JS function)
 $userLat = isset($_GET['lat']) ? (float)$_GET['lat'] : null;
 $userLng = isset($_GET['lng']) ? (float)$_GET['lng'] : null;
 
 // ─── Fetch All Active Shops ───────────────────────────────────────────────────
+/**
+ * Fetch all shops that are marked as "Active" (visible to customers).
+ * JOIN with the users table to show the shopkeeper's name if needed.
+ */
 $result = mysqli_query($conn, "SELECT s.*, u.name AS owner_name FROM shops s LEFT JOIN users u ON s.owner_id = u.id WHERE s.is_active = 1");
 $shops = [];
 while ($row = mysqli_fetch_assoc($result)) {
+    // If we have user coordinates, calculate the distance to this shop
     if ($userLat && $userLng) {
         $d = haversine($userLat, $userLng, $row['lat'], $row['lng']);
         $row['distance'] = $d;
+        
+        // Format the label: e.g., "450 m away" vs "2.5 km away"
         if ($d < 1 && $d > 0) {
             $row['distance_label'] = round($d * 1000) . ' m away';
         } elseif ($d == 0) {
@@ -44,6 +73,8 @@ while ($row = mysqli_fetch_assoc($result)) {
     $shops[] = $row;
 }
 
+// ─── Sort Shops by Distance ──────────────────────────────────────────────────
+// If location is detected, sort the $shops array so the closest branch is first.
 if ($userLat && $userLng) {
     usort($shops, fn($a, $b) => $a['distance'] <=> $b['distance']);
 }
@@ -53,9 +84,11 @@ if ($userLat && $userLng) {
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Find Shops - Ghanshyam Bakery & Live Cake Shop</title>
+    <title>Find Shops - Ghanshyam Bakery</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Custom Tailwind Color Tokens (Shared across customer portal) -->
     <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -91,17 +124,17 @@ if ($userLat && $userLng) {
 </head>
 <body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex flex-col">
 
-<!-- TopNavBar -->
+<!-- ═══ TOP NAVBAR ═══════════════════════════════════════════════════════════ -->
 <header class="bg-stone-50 border-b border-rose-100 shadow-sm shadow-amber-900/5 sticky top-0 z-50">
     <nav class="flex justify-between items-center w-full px-8 py-4 font-serif text-base tracking-tight">
         <div class="flex items-center gap-6">
-            <img src="../assets/logo/image.png" alt="Ghanshyam Bakery Logo" class="w-10 h-10 object-cover rounded-md"/>
+            <img src="../assets/logo/image.png" alt="Logo" class="w-10 h-10 object-cover rounded-md"/>
             <div>
                 <div class="text-2xl font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</div>
                 <div class="text-sm text-stone-500">Bringing your nearest cake shop just a click away.</div>
             </div>
         </div>
-            <div class="flex items-center gap-8">
+        <div class="flex items-center gap-8">
             <div class="hidden md:flex gap-6">
                 <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="dashboard.php">Home</a>
                 <a class="text-amber-900 border-b-2 border-amber-900 font-bold pb-1 duration-300 ease-in-out" href="shops.php">Shop</a>
@@ -121,7 +154,7 @@ if ($userLat && $userLng) {
 </header>
 
 <div class="flex w-full">
-    <!-- SideNavBar -->
+    <!-- ═══ SIDEBAR NAVIGATION ══════════════════════════════════════════════════ -->
     <aside class="hidden lg:flex flex-col h-[calc(100vh-80px)] w-72 bg-white border-r border-rose-50 shadow-lg shadow-amber-900/5 sticky top-20 p-6 space-y-2 font-serif text-sm font-medium">
         <div class="mb-8">
             <div class="flex items-center gap-3 mb-2">
@@ -146,9 +179,10 @@ if ($userLat && $userLng) {
         </a>
     </aside>
 
-    <!-- Main Content -->
+    <!-- ═══ MAIN CONTENT: SHOP LISTING ═════════════════════════════════════════ -->
     <main class="flex-1 p-8 overflow-x-hidden">
         
+        <!-- Header & Detect Location Button -->
         <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
                 <h1 class="font-headline-lg text-amber-950">Nearby Branches</h1>
@@ -159,15 +193,19 @@ if ($userLat && $userLng) {
             </button>
         </div>
 
+        <!-- Shop Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <?php if (count($shops) > 0): ?>
                 <?php foreach ($shops as $shop): ?>
-                <!-- Branch Card -->
+                <!-- Individual Shop Branch Card -->
                 <div class="bg-white rounded-xl p-6 border border-rose-50 ambient-shadow flex flex-col gap-4 group hover:-translate-y-1 transition-transform">
                     <div class="flex justify-between items-start">
+                        <!-- Icon with hover background effect -->
                         <div class="bg-rose-50 p-3 rounded-lg group-hover:bg-primary-container transition-colors">
                             <span class="material-symbols-outlined text-rose-400 group-hover:text-on-primary-container transition-colors">storefront</span>
                         </div>
+                        
+                        <!-- Floating Distance Badge (only shown if location detected) -->
                         <?php if (isset($shop['distance_label'])): ?>
                             <span class="text-label-sm bg-surface-container px-3 py-1 rounded-full text-secondary font-bold">
                                 <?= htmlspecialchars($shop['distance_label']) ?>
@@ -175,6 +213,7 @@ if ($userLat && $userLng) {
                         <?php endif; ?>
                     </div>
                     
+                    <!-- Shop Details -->
                     <div>
                         <h3 class="font-headline-sm text-xl text-amber-950 mb-1"><?= htmlspecialchars($shop['name']) ?></h3>
                         <p class="text-label-sm text-stone-500 mb-2 truncate" title="<?= htmlspecialchars($shop['address']) ?>">
@@ -185,21 +224,26 @@ if ($userLat && $userLng) {
                         </p>
                     </div>
                     
+                    <!-- Availability Status -->
                     <div class="flex items-center gap-2 text-label-sm mt-2">
                         <span class="text-green-600 font-bold flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> Open Now</span>
                     </div>
                     
+                    <!-- Footer Actions (Visit & Directions) -->
                     <div class="mt-auto pt-4 flex gap-3">
                         <a href="shop_detail.php?id=<?= $shop['id'] ?>" class="flex-1 text-center py-2 bg-secondary text-white rounded-lg font-label-md hover:bg-on-secondary-fixed-variant transition-colors">
                             Visit Shop
                         </a>
                         
                         <?php
+                            // Build Google Maps Directions URL
                             $dest = urlencode($shop['lat'] . ',' . $shop['lng']);
                             if ($userLat && $userLng) {
+                                // If origin is known, provide a direct route
                                 $origin = urlencode($userLat . ',' . $userLng);
                                 $mapsUrl = "https://www.google.com/maps/dir/?api=1&origin={$origin}&destination={$dest}&travelmode=driving";
                             } else {
+                                // Otherwise, let Google suggest based on their current IP/GPS
                                 $mapsUrl = "https://www.google.com/maps/dir/?api=1&destination={$dest}&travelmode=driving";
                             }
                         ?>
@@ -210,6 +254,7 @@ if ($userLat && $userLng) {
                 </div>
                 <?php endforeach; ?>
             <?php else: ?>
+                <!-- Empty State -->
                 <div class="col-span-full bg-white rounded-xl py-16 px-8 text-center border border-rose-50 ambient-shadow">
                     <span class="material-symbols-outlined text-4xl text-stone-300 mb-4">store_off</span>
                     <h3 class="font-headline-sm text-amber-950 mb-2">No shops found</h3>
@@ -221,7 +266,7 @@ if ($userLat && $userLng) {
     </main>
 </div>
 
-<!-- Footer -->
+<!-- ═══ FOOTER ═══════════════════════════════════════════════════════════════ -->
 <footer class="bg-stone-100 border-t border-stone-200 mt-auto">
     <div class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 font-serif text-xs uppercase tracking-widest">
         <div class="flex flex-col items-center md:items-start gap-4">
@@ -239,14 +284,29 @@ if ($userLat && $userLng) {
     </div>
 </footer>
 
+<!-- ═══ CLIENT-SIDE SCRIPTS ══════════════════════════════════════════════════ -->
 <script>
+/**
+ * Auto-run detection on page load if coordinates aren't in the URL yet.
+ */
 document.addEventListener("DOMContentLoaded", function() {
     const urlParams = new URLSearchParams(window.location.search);
     if (!urlParams.has('lat') || !urlParams.has('lng')) {
-        detectLocation(false); // Silent auto-detect
+        detectLocation(false); // Silent auto-detect for better UX
     }
 });
 
+/**
+ * detectLocation(showStatus)
+ * =========================
+ * Uses the browser's Geolocation API to find the user's GPS coordinates.
+ * 
+ * Logic:
+ *   1. Check if browser supports navigation.geolocation.
+ *   2. Request current position (user will see a browser prompt).
+ *   3. If allowed: Redirect to shops.php with lat/lng as GET parameters.
+ *   4. The PHP code then takes over, calculates distances, and reloads the page.
+ */
 function detectLocation(showStatus = true) {
     const btn = document.getElementById('locate-btn');
     const status = document.getElementById('location-status');
@@ -263,11 +323,14 @@ function detectLocation(showStatus = true) {
 
     navigator.geolocation.getCurrentPosition(
         function(position) {
+            // SUCCESS: Grab coordinates
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
+            // RELOAD: Pass coords to PHP for distance calculation
             window.location.href = `shops.php?lat=${lat}&lng=${lng}`;
         },
         function(error) {
+            // ERROR: User denied or location unavailable
             if(showStatus) {
                 if(btn) { btn.innerHTML = '<span class="material-symbols-outlined text-sm">my_location</span> Retry Location'; btn.disabled = false; }
                 if(status) status.textContent = '❌ Could not get location. Please allow access.';

@@ -2,23 +2,41 @@
 /**
  * customer/my_orders.php
  * ======================
- * CUSTOMER ORDER HISTORY PAGE - Sweet Artisans Theme
+ * CUSTOMER ORDER HISTORY PAGE
+ * 
+ * This page allows customers to track their current orders and view their history.
+ * It includes a visual timeline for active orders and a cancellation system.
+ * 
+ * FEATURES:
+ *   - Status Tabs: Filter orders by 'All', 'Pending', 'Preparing', etc.
+ *   - Live Timeline: Shows progress from Pending → Preparing → Ready → Completed.
+ *   - Order Cancellation: Only allowed if the order is still 'pending'.
+ *   - Detailed Breakdown: Shows products, flavors, weights, and shop info for each order.
  */
 
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'customer';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Ensures customer-only access
+require_once '../config/db.php';           // Database connection ($conn)
 
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
 $userInitial = strtoupper(substr($userName, 0, 1));
 
 // ─── Handle Order Cancellation ───────────────────────────────────────────────
+/**
+ * Cancellation logic:
+ *   1. Check if the order belongs to the current user.
+ *   2. Check if the current status is 'pending'.
+ *   3. If both pass, update status to 'cancelled'.
+ */
 $success_msg = '';
 $error_msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
     $cancelId = (int)$_POST['cancel_order_id'];
+    
+    // Security check: verify ownership and current status
     $checkRes = mysqli_query($conn, "SELECT status FROM orders WHERE id = $cancelId AND customer_id = $userId");
     $orderData = mysqli_fetch_assoc($checkRes);
     
@@ -26,12 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
         if ($orderData['status'] === 'pending') {
             $updateQ = "UPDATE orders SET status = 'cancelled' WHERE id = $cancelId AND customer_id = $userId";
             if (mysqli_query($conn, $updateQ)) {
-                $success_msg = "Order #" . str_pad($cancelId, 4, '0', STR_PAD_LEFT) . " has been cancelled.";
+                $success_msg = "Order #" . str_pad($cancelId, 4, '0', STR_PAD_LEFT) . " has been cancelled successfully.";
             } else {
                 $error_msg = "Could not cancel order due to a system error.";
             }
         } else {
-            $error_msg = "Order can no longer be cancelled as it is " . ucfirst($orderData['status']) . ".";
+            // Cannot cancel if the shopkeeper has already started "preparing" the order
+            $error_msg = "Order can no longer be cancelled as it is already " . ucfirst($orderData['status']) . ".";
         }
     } else {
         $error_msg = "Invalid order specified.";
@@ -39,6 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
 }
 
 // ─── Fetch All Orders ────────────────────────────────────────────────────────
+/**
+ * Fetch all orders for this user, including shop details.
+ * Orders are sorted by newest first (created_at DESC).
+ */
 $ordersRes = mysqli_query($conn,
     "SELECT o.*, s.name AS shop_name, s.address AS shop_address
      FROM orders o JOIN shops s ON o.shop_id = s.id
@@ -48,6 +71,10 @@ $ordersRes = mysqli_query($conn,
 $orders = [];
 while ($row = mysqli_fetch_assoc($ordersRes)) { $orders[] = $row; }
 
+/**
+ * Fetch line items for each order.
+ * We store them in a nested array: $orderItems[order_id] = [item1, item2, ...].
+ */
 $orderItems = [];
 foreach ($orders as $order) {
     $itemsRes = mysqli_query($conn,
@@ -55,41 +82,43 @@ foreach ($orders as $order) {
          FROM order_items oi 
          JOIN products p ON oi.product_id = p.id
          WHERE oi.order_id = {$order['id']}"
-    );
+     );
     $orderItems[$order['id']] = [];
     while ($item = mysqli_fetch_assoc($itemsRes)) {
         $orderItems[$order['id']][] = $item;
     }
 }
 
+// ─── Status Mapping & Filtering ──────────────────────────────────────────────
+// Progress percentage for the UI progress bar
 $statusMap = ['pending'=>25, 'preparing'=>50, 'ready'=>75, 'completed'=>100, 'cancelled'=>0];
 
+// Handle the ?status=... filter in the URL
 $allowedStatusFilters = ['all', 'pending', 'preparing', 'ready', 'completed', 'cancelled'];
 $currentFilter = isset($_GET['status']) ? strtolower(trim($_GET['status'])) : 'all';
 if (!in_array($currentFilter, $allowedStatusFilters, true)) {
     $currentFilter = 'all';
 }
 
+// Apply filter to the $orders array
 $filteredOrders = array_values(array_filter($orders, function ($order) use ($currentFilter) {
-    if ($currentFilter === 'all') {
-        return true;
-    }
+    if ($currentFilter === 'all') { return true; }
     return trim(strtolower($order['status'])) === $currentFilter;
 }));
 
+// ─── KPI Calculations (Summary Stats) ────────────────────────────────────────
 $totalOrders = count($orders);
 $activeOrders = 0;
 $completedOrders = 0;
 $cancelledOrders = 0;
+
 foreach ($orders as $orderCountRow) {
     $normalizedStatus = trim(strtolower($orderCountRow['status']));
     if (in_array($normalizedStatus, ['pending', 'preparing', 'ready'], true)) {
         $activeOrders++;
-    }
-    if ($normalizedStatus === 'completed') {
+    } elseif ($normalizedStatus === 'completed') {
         $completedOrders++;
-    }
-    if ($normalizedStatus === 'cancelled') {
+    } elseif ($normalizedStatus === 'cancelled') {
         $cancelledOrders++;
     }
 }
@@ -99,7 +128,7 @@ foreach ($orders as $orderCountRow) {
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>My Orders - Ghanshyam Bakery & Live Cake Shop</title>
+    <title>My Orders - Ghanshyam Bakery</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script id="tailwind-config">
@@ -137,11 +166,11 @@ foreach ($orders as $orderCountRow) {
 </head>
 <body class="bg-surface text-on-surface font-body-md antialiased min-h-screen">
 
-<!-- TopNavBar -->
+<!-- ═══ TOP NAVBAR ═══════════════════════════════════════════════════════════ -->
 <header class="bg-stone-50 border-b border-rose-100 shadow-sm shadow-amber-900/5 sticky top-0 z-50">
     <nav class="flex justify-between items-center w-full px-8 py-4 font-serif text-base tracking-tight">
         <div class="flex items-center gap-6">
-            <img src="../assets/logo/image.png" alt="Ghanshyam Bakery Logo" class="w-10 h-10 object-cover rounded-md"/>
+            <img src="../assets/logo/image.png" alt="Logo" class="w-10 h-10 object-cover rounded-md"/>
             <div>
                 <div class="text-2xl font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</div>
                 <div class="text-sm text-stone-500">Bringing your nearest cake shop just a click away.</div>
@@ -167,7 +196,7 @@ foreach ($orders as $orderCountRow) {
 </header>
 
 <div class="flex w-full">
-    <!-- SideNavBar -->
+    <!-- ═══ SIDEBAR NAVIGATION ══════════════════════════════════════════════════ -->
     <aside class="hidden lg:flex flex-col h-[calc(100vh-80px)] w-72 bg-white border-r border-rose-50 shadow-lg shadow-amber-900/5 sticky top-20 p-6 space-y-2 font-serif text-sm font-medium">
         <div class="mb-8">
             <div class="flex items-center gap-3 mb-2">
@@ -192,9 +221,10 @@ foreach ($orders as $orderCountRow) {
         </a>
     </aside>
 
-    <!-- Main Content -->
+    <!-- ═══ MAIN CONTENT: ORDER CENTER ══════════════════════════════════════════ -->
     <main class="flex-1 p-8 overflow-x-hidden">
         
+        <!-- Welcome Banner & Summary Cards -->
         <div class="bg-white rounded-2xl border border-rose-50 ambient-shadow overflow-hidden mb-8">
             <div class="bg-gradient-to-r from-amber-50 via-rose-50 to-stone-50 p-6 md:p-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
                 <div>
@@ -202,6 +232,7 @@ foreach ($orders as $orderCountRow) {
                     <h1 class="font-headline-lg text-amber-950">My Orders</h1>
                     <p class="text-body-md text-stone-600 mt-3 max-w-2xl">Track every cake journey, from preparation to doorstep delivery, in one calm view.</p>
                 </div>
+                <!-- Stat Grid -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full md:w-auto">
                     <div class="bg-white/80 backdrop-blur rounded-xl border border-rose-100 px-4 py-3 min-w-[108px] shadow-sm">
                         <p class="text-[10px] uppercase tracking-widest text-stone-400">Total</p>
@@ -223,6 +254,7 @@ foreach ($orders as $orderCountRow) {
             </div>
         </div>
 
+        <!-- Filter Tabs -->
         <div class="flex flex-wrap items-center gap-3 mb-8">
             <?php
                 $filterLabels = [
@@ -243,6 +275,7 @@ foreach ($orders as $orderCountRow) {
             <?php endforeach; ?>
         </div>
 
+        <!-- Status Messages (Success/Error) -->
         <?php if ($success_msg): ?>
             <div class="mb-6 p-4 bg-green-50 text-green-800 rounded-lg border border-green-200 flex items-center gap-3">
                 <span class="material-symbols-outlined">check_circle</span> <?= htmlspecialchars($success_msg) ?>
@@ -254,7 +287,9 @@ foreach ($orders as $orderCountRow) {
             </div>
         <?php endif; ?>
 
+        <!-- Order Cards Loop -->
         <?php if (empty($filteredOrders)): ?>
+            <!-- Empty State -->
             <div class="bg-white rounded-2xl py-16 px-8 text-center border border-rose-50 ambient-shadow">
                 <div class="w-20 h-20 bg-gradient-to-br from-rose-50 to-stone-100 rounded-full flex items-center justify-center mx-auto mb-6 border border-rose-100">
                     <span class="material-symbols-outlined text-5xl text-secondary">cake</span>
@@ -262,7 +297,7 @@ foreach ($orders as $orderCountRow) {
                 <h3 class="font-headline-sm text-amber-950 mb-2"><?= $currentFilter === 'all' ? 'No orders yet' : 'No orders in this status' ?></h3>
                 <p class="text-stone-500 mb-6 max-w-md mx-auto">
                     <?= $currentFilter === 'all'
-                        ? 'You haven\'t placed any orders with Ghanshyam Bakery &amp; Live Cake Shop yet. Browse the shops and start with something sweet.'
+                        ? 'You haven\'t placed any orders with Ghanshyam Bakery &amp; Live Cake Shop yet.'
                         : 'Try switching to another status filter to see more orders.' ?>
                 </p>
                 <a href="shops.php" class="inline-block px-6 py-3 bg-secondary text-white rounded-lg font-label-md hover:bg-on-secondary-fixed-variant transition-colors shadow-md shadow-secondary/20">Start Browsing</a>
@@ -275,12 +310,15 @@ foreach ($orders as $orderCountRow) {
                     $progress = $statusMap[$normalizedStatus] ?? 0;
                     $items = $orderItems[$order['id']] ?? [];
                     $isCancelled = $normalizedStatus === 'cancelled';
+                    
+                    // Colors based on status
                     $statusTone = $isCancelled ? 'bg-red-50 text-red-700 border-red-100' : 'bg-primary-container text-on-primary-container border-primary-container';
                     $statusLabel = ucfirst($normalizedStatus);
                     $statusSteps = ['pending', 'preparing', 'ready', 'completed'];
                 ?>
+                <!-- Individual Order Card -->
                 <div class="bg-white rounded-2xl overflow-hidden border border-rose-100 ambient-shadow group hover:-translate-y-0.5 transition-transform duration-300">
-                    <!-- Order Header -->
+                    <!-- Order Header Section -->
                     <div class="bg-gradient-to-r from-surface-container-low via-white to-rose-50 p-6 border-b border-rose-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <div class="flex items-center gap-3 mb-1">
@@ -289,6 +327,7 @@ foreach ($orders as $orderCountRow) {
                                     <?= $order['order_type'] === 'delivery' ? '🚚 Delivery' : '🏪 Pickup' ?>
                                 </span>
                             </div>
+                            <!-- Metadata Labels -->
                             <div class="flex flex-wrap items-center gap-2 text-label-sm text-stone-500 mt-3">
                                 <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-stone-200 shadow-sm">
                                     <span class="material-symbols-outlined text-[16px] text-secondary">schedule</span>
@@ -304,6 +343,7 @@ foreach ($orders as $orderCountRow) {
                                 </span>
                             </div>
                         </div>
+                        <!-- Order Total Display -->
                         <div class="text-right bg-white rounded-xl border border-rose-100 px-4 py-3 shadow-sm min-w-[160px]">
                             <p class="text-sm text-stone-500 mb-1">Total Amount</p>
                             <p class="font-headline-sm text-xl text-amber-950">₹<?= number_format($order['total_amount'], 2) ?></p>
@@ -311,9 +351,9 @@ foreach ($orders as $orderCountRow) {
                         </div>
                     </div>
 
-                    <!-- Order Body -->
+                    <!-- Order Progress & Items -->
                     <div class="p-6 md:p-7">
-                        <!-- Progress Bar for Active Orders -->
+                        <!-- Progress Timeline (for non-cancelled orders) -->
                         <?php if (!$isCancelled): ?>
                             <div class="mb-8 rounded-2xl bg-stone-50 border border-rose-100 p-4 md:p-5">
                                 <div class="flex items-center justify-between mb-4">
@@ -321,15 +361,18 @@ foreach ($orders as $orderCountRow) {
                                     <span class="text-label-sm font-bold text-secondary bg-white border border-rose-100 px-3 py-1 rounded-full shadow-sm"><?= $statusLabel ?></span>
                                 </div>
                                 <div class="relative pt-4">
+                                    <!-- Gray background line -->
                                     <div class="absolute left-4 right-4 top-8 h-[2px] bg-surface-container-high"></div>
+                                    <!-- Animated progress line -->
                                     <div class="absolute left-4 top-8 h-[2px] bg-gradient-to-r from-secondary via-rose-400 to-secondary transition-all duration-1000" style="width: <?= $progress ?>%;"></div>
+                                    
+                                    <!-- Progress Dots Loop -->
                                     <div class="grid grid-cols-4 gap-2 relative">
                                         <?php foreach ($statusSteps as $index => $step): ?>
                                             <?php
                                                 $stepPosition = ($index + 1) * 25;
                                                 $isStepActive = $progress >= $stepPosition;
                                                 $isCurrentStep = $normalizedStatus === $step;
-                                                $stepLabel = ucfirst($step);
                                             ?>
                                             <div class="flex flex-col items-center text-center gap-3">
                                                 <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center bg-white z-10 <?= $isStepActive ? 'border-secondary text-secondary shadow-sm' : 'border-stone-200 text-stone-400' ?> <?= $isCurrentStep ? 'ring-4 ring-rose-100' : '' ?>">
@@ -340,7 +383,7 @@ foreach ($orders as $orderCountRow) {
                                                     <?php endif; ?>
                                                 </div>
                                                 <div class="px-3 py-2 rounded-xl text-[11px] sm:text-label-sm font-medium border w-full <?= $isStepActive ? 'bg-white border-secondary text-secondary shadow-sm' : 'bg-white/70 border-stone-200 text-stone-400' ?>">
-                                                    <?= $stepLabel ?>
+                                                    <?= ucfirst($step) ?>
                                                 </div>
                                             </div>
                                         <?php endforeach; ?>
@@ -348,12 +391,13 @@ foreach ($orders as $orderCountRow) {
                                 </div>
                             </div>
                         <?php else: ?>
+                            <!-- Cancelled State Message -->
                             <div class="mb-6 p-4 bg-error-container text-on-error-container rounded-2xl border border-red-200 text-center font-bold shadow-sm">
                                 This order was cancelled.
                             </div>
                         <?php endif; ?>
 
-                        <!-- Items List -->
+                        <!-- Products List in this Order -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <?php foreach ($items as $item): ?>
                             <div class="flex items-center gap-4 p-4 bg-stone-50 rounded-2xl border border-stone-100 shadow-sm">
@@ -362,6 +406,7 @@ foreach ($orders as $orderCountRow) {
                                 <div class="flex-1">
                                     <p class="font-bold text-amber-950 text-sm mb-1">
                                         <?= htmlspecialchars($item['product_name']) ?>
+                                        <!-- Item Metadata Badges -->
                                         <?php if(!empty($item['product_flavor'])): ?>
                                             <span class="text-[10px] font-bold text-secondary bg-primary-container px-1.5 py-0.5 rounded ml-1"><?= htmlspecialchars($item['product_flavor']) ?></span>
                                         <?php endif; ?>
@@ -378,10 +423,10 @@ foreach ($orders as $orderCountRow) {
                             <?php endforeach; ?>
                         </div>
 
-                        <!-- Cancel Button (Only if Pending) -->
+                        <!-- Cancel Action (Only visible if status is still 'pending') -->
                         <?php if ($normalizedStatus === 'pending'): ?>
                             <div class="mt-6 flex justify-end border-t border-rose-50 pt-4">
-                                <form method="POST" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                                <form method="POST" onsubmit="return confirm('Are you sure you want to cancel this order? This cannot be undone.');">
                                     <input type="hidden" name="cancel_order_id" value="<?= $order['id'] ?>">
                                     <button type="submit" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-bold hover:bg-red-50 transition-colors">
                                         Cancel Order
@@ -397,7 +442,7 @@ foreach ($orders as $orderCountRow) {
     </main>
 </div>
 
-<!-- Footer -->
+<!-- ═══ FOOTER ═══════════════════════════════════════════════════════════════ -->
 <footer class="bg-stone-100 border-t border-stone-200 mt-auto">
     <div class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 font-serif text-xs uppercase tracking-widest">
         <div class="flex flex-col items-center md:items-start gap-4">

@@ -26,10 +26,10 @@ if (!$conn) {
     // If it fails, stop the script and show a helpful message
     die("
         <div style='font-family:Arial;max-width:600px;margin:50px auto;padding:20px;background:#fff3f3;border:2px solid red;border-radius:8px;'>
-            <h2>❌ Database Connection Failed</h2>
+            <h2> Database Connection Failed</h2>
             <p><strong>Error:</strong> " . mysqli_connect_error() . "</p>
-            <p>✅ Make sure XAMPP MySQL is running.</p>
-            <p>✅ Run <a href='/GSK/setup.php'>/GSK/setup.php</a> first to create the database.</p>
+            <p> Make sure XAMPP MySQL is running.</p>
+            <p> Run <a href='/GSK/setup.php'>/GSK/setup.php</a> first to create the database.</p>
         </div>
     ");
 }

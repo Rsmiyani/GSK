@@ -340,19 +340,31 @@ $chartPalette = ['#e91e8c','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#0
 </div>
 
 <script>
+<script>
+/**
+ * Color palette shorthand object.
+ * Used to keep chart colors consistent across all charts on this page.
+ * Each key maps to a hex color code.
+ */
 const C = { pink:'#e91e8c', blue:'#3b82f6', green:'#10b981', orange:'#f59e0b', red:'#ef4444', purple:'#8b5cf6', cyan:'#06b6d4' };
 
-// ─── Revenue Trend ───────────────────────────────────────────────────────────
+// ─── Chart 1: Daily Revenue Trend (Stacked Area Line Chart) ─────────────────
+// Shows daily revenue for EACH shop as a separate line (one per dataset)
+// 'stacked: true' on the Y axis means lines pile on top of each other
+// PHP passes data as JSON arrays using json_encode()
 new Chart(document.getElementById('revenueTrendChart'), {
     type: 'line',
     data: {
+        // X-axis labels: date strings like "12 Jan"
         labels: <?= json_encode(array_map(fn($d) => date('d M', strtotime($d)), $dates)) ?>,
         datasets: [
+            // PHP loops through each shop and creates one dataset per shop
             <?php foreach ($shops as $i => $shop): ?>
             {
                 label: '<?= addslashes(substr($shop['name'],0,25)) ?>',
                 data: <?= json_encode(array_values($shopDailyData[$shop['id']])) ?>,
                 borderColor: '<?= $chartPalette[$i % count($chartPalette)] ?>',
+                // Adding '18' after hex makes it 10% transparent for the fill
                 backgroundColor: '<?= $chartPalette[$i % count($chartPalette)] ?>18',
                 borderWidth: 2, fill: true, tension: 0.4, pointRadius: 1, pointHoverRadius: 5
             },
@@ -363,36 +375,45 @@ new Chart(document.getElementById('revenueTrendChart'), {
         responsive: true, interaction: { intersect: false, mode: 'index' },
         plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 14, font: { size: 11 } } } },
         scales: {
+            // Y axis: starts at 0, values show ₹ prefix
             y: { beginAtZero: true, stacked: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => '₹' + v } },
+            // X axis: limit ticks so labels don't overlap
             x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } }
         }
     }
 });
 
-// ─── Revenue by Shop ─────────────────────────────────────────────────────────
+// ─── Chart 2: Revenue by Shop (Horizontal Bar Chart) ─────────────────────────
+// Each bar represents one shop's total revenue in the selected period.
+// indexAxis: 'y' makes it horizontal (shop names on Y, money on X)
 new Chart(document.getElementById('shopRevenueChart'), {
     type: 'bar',
     data: {
+        // Truncate shop names to 20 chars so labels fit the chart
         labels: <?= json_encode(array_map(fn($s) => substr($s['name'],0,20), $shopRevenue)) ?>,
         datasets: [{
             label: 'Revenue (₹)',
             data: <?= json_encode(array_map(fn($s) => (float)$s['rev'], $shopRevenue)) ?>,
+            // 'CC' suffix adds ~80% opacity to the hex color
             backgroundColor: <?= json_encode(array_map(fn($i) => $chartPalette[$i % count($chartPalette)] . 'CC', range(0, count($shopRevenue)-1))) ?>,
             borderRadius: 8, borderSkipped: false
         }]
     },
     options: {
-        responsive: true, indexAxis: 'y',
+        responsive: true, indexAxis: 'y', // Horizontal bars
         plugins: { legend: { display: false } },
         scales: { x: { beginAtZero: true, ticks: { callback: v => '₹' + v }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { grid: { display: false } } }
     }
 });
 
-// ─── Status Breakdown ────────────────────────────────────────────────────────
+// ─── Chart 3: Order Status Breakdown (Doughnut) ──────────────────────────────
+// Shows the count of orders in each status (pending, preparing, completed, etc.)
+// The PHP $statusBreakdown is a JSON object: {"pending": 5, "completed": 20, ...}
 const sd = <?= json_encode($statusBreakdown) ?>;
 new Chart(document.getElementById('statusChart'), {
     type: 'doughnut',
     data: {
+        // Capitalize the first letter of each status for display
         labels: Object.keys(sd).map(s => s.charAt(0).toUpperCase() + s.slice(1)),
         datasets: [{ data: Object.values(sd),
             backgroundColor: [C.orange, C.blue, C.green, '#059669', C.red], borderWidth: 0, hoverOffset: 8
@@ -401,7 +422,9 @@ new Chart(document.getElementById('statusChart'), {
     options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 10, font: { size: 11 } } } } }
 });
 
-// ─── Delivery vs Pickup ──────────────────────────────────────────────────────
+// ─── Chart 4: Delivery vs Pickup (Doughnut) ──────────────────────────────────
+// Two slices: one for delivery orders, one for pickup orders
+// $deliveryCount and $pickupCount come from the PHP query above
 new Chart(document.getElementById('typeChart'), {
     type: 'doughnut',
     data: {
@@ -411,12 +434,15 @@ new Chart(document.getElementById('typeChart'), {
     options: { responsive: true, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 10, font: { size: 11 } } } } }
 });
 
-// ─── Customer Growth ─────────────────────────────────────────────────────────
+// ─── Chart 5: New Customers per Day (Bar Chart) ──────────────────────────────
+// Shows how many new customer accounts were created each day
+// Helps the admin understand platform growth trends
 new Chart(document.getElementById('customerChart'), {
     type: 'bar',
     data: {
         labels: <?= json_encode(array_map(fn($d) => date('d M', strtotime($d)), $dates)) ?>,
         datasets: [{ label: 'New Customers', data: <?= json_encode(array_values($newCustomers)) ?>,
+            // '88' makes the color 53% transparent
             backgroundColor: C.purple + '88', borderRadius: 4, borderSkipped: false
         }]
     },
@@ -426,6 +452,11 @@ new Chart(document.getElementById('customerChart'), {
     }
 });
 
+/**
+ * toggleSidebar()
+ * ===============
+ * Opens or closes the mobile sidebar by toggling CSS classes.
+ */
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('show');

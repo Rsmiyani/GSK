@@ -1,28 +1,50 @@
 <?php
 /**
- * shopkeeper/products.php - PRODUCT MANAGEMENT
- * Shopkeeper can add/edit/delete/toggle cakes for their shop.
+ * shopkeeper/products.php
+ * =======================
+ * PRODUCT MANAGEMENT PAGE
+ *
+ * Shopkeeper can:
+ *   - View all their listed cakes in a table
+ *   - Toggle a cake's availability (In Stock / Sold Out)
+ *   - Edit a cake's details (inline, in the right panel)
+ *   - Delete a cake
+ *   - Add new cakes (via a separate add_product.php page)
+ *
+ * HOW IT WORKS:
+ *   1. Reads the $shopId from session to scope ALL queries to just this shop
+ *   2. Handles POST actions: 'save' (edit), 'delete', 'toggle' availability
+ *   3. Fetches all products belonging to this shop for the table
+ *   4. If ?edit=ID is in the URL, loads that product into the edit form
  */
 
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'shopkeeper';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Redirects non-shopkeepers away
+require_once '../config/db.php';           // Opens MySQL connection ($conn)
 
+// Get the shopkeeper's shop ID from their session
+// Without this, we wouldn't know which shop's products to show
 $shopId = $_SESSION['shop_id'] ?? 0;
-if (!$shopId) { header("Location: dashboard.php"); exit(); }
+if (!$shopId) { header("Location: dashboard.php"); exit(); } // No shop = redirect home
 
-$message = '';
-$editProduct = null;
+$message     = '';   // Holds 'success:...' or 'error:...' after form actions
+$editProduct = null; // Holds the product data when the edit form is open
 
+// Check if we were redirected here FROM add_product.php with a flash message
+// e.g. products.php?status=success&msg=Item+added!
 if (isset($_GET['status'], $_GET['msg'])) {
     $message = $_GET['status'] . ':' . $_GET['msg'];
 }
 
+// ─── Handle Form Submissions ─────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Read the hidden 'action' input to decide what to do
     $action = $_POST['action'] ?? '';
 
+    // ── SAVE: Add a new product OR update an existing one ────────────────────
     if ($action === 'save') {
-        $pid         = (int)($_POST['product_id'] ?? 0);
+        $pid         = (int)($_POST['product_id'] ?? 0); // 0 = adding new, >0 = editing
         $name        = trim($_POST['name']        ?? '');
         $flavor      = trim($_POST['flavor']      ?? '');
         $description = trim($_POST['description'] ?? '');
@@ -32,23 +54,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $categoryId  = (int)($_POST['category_id'] ?? 0);
         $newCategory = trim($_POST['new_category'] ?? '');
 
-        // Handle new category creation
+        // ── Handle New Category Creation ──────────────────────────────────────
+        // If the shopkeeper typed a new category name, create it first,
+        // then use its new ID as the category for this product.
         if (!empty($newCategory)) {
+            // INSERT IGNORE skips insertion if the category name already exists for this shop
             $catSql = mysqli_prepare($conn, "INSERT IGNORE INTO categories (shop_id, name) VALUES (?, ?)");
             mysqli_stmt_bind_param($catSql, 'is', $shopId, $newCategory);
             mysqli_stmt_execute($catSql);
-            
+
+            // Fetch the ID of the just-created (or already-existing) category
             $catRes = mysqli_query($conn, "SELECT id FROM categories WHERE shop_id=$shopId AND name='" . mysqli_real_escape_string($conn, $newCategory) . "'");
             if ($r = mysqli_fetch_assoc($catRes)) {
-                $categoryId = $r['id'];
+                $categoryId = $r['id']; // Use this ID when inserting/updating the product
             }
         }
         
-        // Nullify if 0
+        // If no category was selected (value=0), store NULL in the DB instead of 0
         $finalCatId = $categoryId > 0 ? $categoryId : null;
 
+        // Check if the weight-based variant pricing checkbox is ticked
         $hasVariants = isset($_POST['has_variants']) ? 1 : 0;
         if ($hasVariants) {
+            // When variants are enabled, use the 1kg price as the base price in the products table
+            // Fall back to 500g if 1kg is missing
             $price = (float)($_POST['variants']['1kg']['price'] ?? ($_POST['variants']['500g']['price'] ?? 0));
         }
 
@@ -84,42 +113,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message='error:Update failed.';
             }
         }
+    // ── DELETE: Remove a product permanently ────────────────────────────────
     } elseif ($action === 'delete') {
         $pid = (int)($_POST['product_id'] ?? 0);
+        // 'AND shop_id=?' is a security check — prevents deleting another shop's product
         $s = mysqli_prepare($conn,"DELETE FROM products WHERE id=? AND shop_id=?");
         mysqli_stmt_bind_param($s,'ii',$pid,$shopId);
         mysqli_stmt_execute($s) ? $message='success:Deleted.' : $message='error:Delete failed.';
+
+    // ── TOGGLE: Flip is_available between 1 (in stock) and 0 (sold out) ────
     } elseif ($action === 'toggle') {
         $pid = (int)($_POST['product_id'] ?? 0);
+        // NOT is_available flips the boolean: 1 becomes 0, 0 becomes 1
         mysqli_query($conn,"UPDATE products SET is_available=NOT is_available WHERE id=$pid AND shop_id=$shopId");
         $message = 'success:Availability updated.';
     }
 }
 
+// ─── Load Product for Editing ─────────────────────────────────────────────────
+// When the admin clicks the ✏️ Edit button, the URL becomes: products.php?edit=5
+// We load that product's data so the form is pre-filled with existing values.
 if (isset($_GET['edit'])) {
     $editId = (int)$_GET['edit'];
+    // Security: 'AND shop_id=$shopId' ensures shopkeeper can only edit their OWN products
     $res = mysqli_query($conn,"SELECT * FROM products WHERE id=$editId AND shop_id=$shopId");
     $editProduct = mysqli_fetch_assoc($res);
-    
-    // Fetch variants if any
-    $existingVariants = [];
+
+    // If this product has weight-based variants (500g, 1kg, etc.), load them too
+    $existingVariants = []; // Will be ['500g' => 450.00, '1kg' => 850.00, ...]
     if ($editProduct && $editProduct['has_variants']) {
         $vRes = mysqli_query($conn, "SELECT weight_label, price FROM product_variants WHERE product_id=$editId");
         while ($v = mysqli_fetch_assoc($vRes)) {
+            // Build an associative array: ['500g' => price, '1kg' => price, ...]
             $existingVariants[$v['weight_label']] = $v['price'];
         }
     }
 }
 
+// ─── Load Categories for the Dropdown ────────────────────────────────────────
+// Used to populate the "Category" dropdown in the add/edit form
 $categoriesList = mysqli_query($conn, "SELECT * FROM categories WHERE shop_id=$shopId ORDER BY name ASC");
 
+// ─── Load All Products for the Table ─────────────────────────────────────────
+// LEFT JOIN with categories so we also get the category name (c.name AS category_name)
+// LEFT JOIN means: even products WITHOUT a category are still shown (they get NULL)
+// ORDER BY category first, then product name — groups products by category
 $products = mysqli_query($conn,
-    "SELECT p.*, c.name AS category_name 
-     FROM products p 
-     LEFT JOIN categories c ON p.category_id = c.id 
-     WHERE p.shop_id=$shopId 
+    "SELECT p.*, c.name AS category_name
+     FROM products p
+     LEFT JOIN categories c ON p.category_id = c.id
+     WHERE p.shop_id=$shopId
      ORDER BY c.name ASC, p.name ASC"
 );
+
+// Parse the message: 'success:Item added!' → $msgType='success', $msgText='Item added!'
 [$msgType, $msgText] = $message ? explode(':', $message, 2) : ['',''];
 ?>
 <!DOCTYPE html><html lang="en"><head>
@@ -283,72 +330,143 @@ $products = mysqli_query($conn,
     </div>
 </div>
 <script>
-function previewImg(url){const img=document.getElementById('imgPreview');if(url){img.src=url;img.style.display='block';img.onerror=()=>img.style.display='none';}else{img.style.display='none';}}
+/**
+ * previewImg(url)
+ * ===============
+ * Shows a live preview of the cake image as the shopkeeper types the URL.
+ * If the URL is invalid/broken, the onerror handler hides the image.
+ */
+function previewImg(url) {
+    const img = document.getElementById('imgPreview');
+    if (url) {
+        img.src = url;
+        img.style.display = 'block';
+        img.onerror = () => img.style.display = 'none'; // Hide if image fails to load
+    } else {
+        img.style.display = 'none'; // Hide when field is empty
+    }
+}
 
+/**
+ * toggleNewCat(val)
+ * =================
+ * Shows or hides the "new category name" text input.
+ * Called when the category dropdown changes.
+ * If the user selects "+ Create New Category" (value='new'),
+ * the input appears. Otherwise it's hidden and cleared.
+ */
 function toggleNewCat(val) {
     const input = document.getElementById('newCatInput');
     if (val === 'new') {
-        input.style.display = 'block';
-        input.required = true;
+        input.style.display = 'block'; // Show the text input
+        input.required = true;          // Make it required so form won't submit empty
     } else {
-        input.style.display = 'none';
-        input.value = '';
+        input.style.display = 'none';  // Hide it
+        input.value = '';               // Clear any previously typed text
         input.required = false;
     }
 }
 
+/**
+ * toggleVariants()
+ * ================
+ * Called when the "Enable Variants" checkbox is toggled.
+ * When variants ARE enabled:
+ *   - Hides the single base price field (not needed)
+ *   - Shows the variant grid (500g, 1kg, 2kg, etc.)
+ *   - Makes 500g and 1kg prices required
+ * When variants are NOT enabled:
+ *   - Shows the single base price field
+ *   - Hides the variant grid
+ */
 function toggleVariants() {
     const hasVar = document.getElementById('hasVariants').checked;
+    // Show/hide the variants grid section
     document.getElementById('variantsSection').style.display = hasVar ? 'block' : 'none';
     const basePriceInput = document.getElementById('basePrice');
-    
+
     if (hasVar) {
+        // Hide the single base price — not needed when variants define prices
         document.getElementById('basePriceGroup').style.display = 'none';
-        basePriceInput.required = false;
+        basePriceInput.required = false; // Remove required so form can submit
+        // 500g and 1kg are the anchor prices — make them required
         document.getElementById('price_500g').required = true;
         document.getElementById('price_1kg').required = true;
     } else {
+        // Show single price field and make it required again
         document.getElementById('basePriceGroup').style.display = 'block';
         basePriceInput.required = true;
+        // Remove required from variant fields
         document.getElementById('price_500g').required = false;
         document.getElementById('price_1kg').required = false;
     }
 }
 
+/**
+ * toggleVarInput(checkbox, weight)
+ * =================================
+ * Called when a variant weight checkbox (e.g. "2kg") is checked/unchecked.
+ * Enables/disables the corresponding price input field.
+ * If unchecked, clears and disables the price field so it won't submit.
+ */
 function toggleVarInput(checkbox, weight) {
     const input = document.getElementById('price_' + weight);
     if (checkbox.checked) {
-        input.disabled = false;
-        if (weight === '500g' || weight === '1kg') input.required = true;
-        autoCalculateVariants(); // Recalculate if newly enabled
+        input.disabled = false; // Enable the price field
+        if (weight === '500g' || weight === '1kg') input.required = true; // These must be filled
+        autoCalculateVariants(); // Recalculate larger sizes when a new size is enabled
     } else {
-        input.disabled = true;
+        input.disabled = true;  // Disable so it doesn't submit
         input.required = false;
-        input.value = '';
+        input.value = '';        // Clear the price
     }
 }
 
+/**
+ * autoCalculateVariants()
+ * =======================
+ * Automatically fills in prices for 2kg, 3kg, 4kg, 5kg, 6kg
+ * based on the 1kg price. This is a convenience shortcut.
+ *
+ * Logic: price_Xkg = price_1kg × X
+ *   (e.g. if 1kg = ₹800, then 2kg = ₹1600, 3kg = ₹2400, etc.)
+ *
+ * Skips any weight that:
+ *   - Has been manually typed by the shopkeeper (data-manual-override='true')
+ *   - Is currently disabled (checkbox unchecked)
+ */
 function autoCalculateVariants() {
     const p500 = parseFloat(document.getElementById('price_500g').value);
     const p1kg = parseFloat(document.getElementById('price_1kg').value);
-    
+
+    // Need both values to calculate — exit early if either is missing
     if (isNaN(p500) || isNaN(p1kg)) return;
-    
+
+    // Multiplier: how many times the 1kg price each size costs
     const multipliers = {'2kg': 2, '3kg': 3, '4kg': 4, '5kg': 5, '6kg': 6};
-    
+
     for (const [w, mult] of Object.entries(multipliers)) {
         const input = document.getElementById('price_' + w);
+        // Only auto-fill if: the shopkeeper hasn't manually overridden it AND it's enabled
         if (!input.dataset.manualOverride && !input.disabled) {
-            input.value = (p1kg * mult).toFixed(2);
+            input.value = (p1kg * mult).toFixed(2); // Round to 2 decimal places
         }
     }
 }
 
+/**
+ * DOMContentLoaded listener
+ * =========================
+ * Marks a price field as "manually overridden" when the shopkeeper types in it.
+ * This prevents autoCalculateVariants() from overwriting their custom price.
+ * Uses the HTML data attribute: data-manual-override="true"
+ */
 document.addEventListener('DOMContentLoaded', () => {
     const multipliers = ['2kg', '3kg', '4kg', '5kg', '6kg'];
     multipliers.forEach(w => {
         const input = document.getElementById('price_' + w);
         if(input) {
+            // When the user manually types, flag it so auto-calc won't overwrite
             input.addEventListener('input', () => {
                 input.dataset.manualOverride = 'true';
             });

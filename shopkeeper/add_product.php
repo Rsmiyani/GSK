@@ -2,64 +2,94 @@
 /**
  * shopkeeper/add_product.php
  * ==========================
- * ADD PRODUCT PAGE
+ * ADD NEW PRODUCT PAGE
+ *
+ * A dedicated, focused page for the shopkeeper to add a new cake listing.
+ * Separated from products.php to avoid cluttering the main management page.
+ *
+ * FEATURES:
+ *   - Category selection (or create a new category on the fly)
+ *   - Weight-based variant pricing (500g, 1kg, 2kg, ... 6kg)
+ *   - Auto-calculation: larger sizes are calculated from the 1kg price
+ *   - Image URL with live preview
+ *
+ * HOW IT WORKS:
+ *   1. If POST: validate, insert product into DB, then redirect back to products.php
+ *   2. If GET: render the empty form
  */
 
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'shopkeeper';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Redirects non-shopkeepers
+require_once '../config/db.php';           // Opens $conn
 
+// Get the shopkeeper's shop ID from the session (set at login)
 $shopId = $_SESSION['shop_id'] ?? 0;
 if (!$shopId) {
-    header("Location: dashboard.php");
+    header("Location: dashboard.php"); // Can't add a product without a shop
     exit();
 }
 
-$message = '';
+$message = ''; // Will hold 'error:...' if validation fails
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name        = trim($_POST['name']        ?? '');
-    $flavor      = trim($_POST['flavor']      ?? '');
-    $description = trim($_POST['description'] ?? '');
-    $price       = (float)($_POST['price']    ?? 0);
-    $imageUrl    = trim($_POST['image_url']   ?? '');
+    // ── Step 1: Read & Clean Form Fields ───────────────────────────────────
+    $name        = trim($_POST['name']        ?? ''); // Product name (required)
+    $flavor      = trim($_POST['flavor']      ?? ''); // Flavor description (optional)
+    $description = trim($_POST['description'] ?? ''); // Long description (optional)
+    $price       = (float)($_POST['price']    ?? 0);  // Base price
+    $imageUrl    = trim($_POST['image_url']   ?? ''); // URL to the product image
+    // Checkbox: 1 = available (in stock), 0 = unavailable (sold out)
     $available   = isset($_POST['is_available']) ? 1 : 0;
-    $categoryId  = (int)($_POST['category_id'] ?? 0);
-    $newCategory = trim($_POST['new_category'] ?? '');
+    $categoryId  = (int)($_POST['category_id'] ?? 0); // ID from the category dropdown
+    $newCategory = trim($_POST['new_category'] ?? ''); // Typed name for a new category
 
+    // ── Step 2: Handle New Category ──────────────────────────────────────
+    // If the user typed a new category name, create it in the DB first
     if (!empty($newCategory)) {
+        // INSERT IGNORE: skips silently if the name already exists for this shop
         $catSql = mysqli_prepare($conn, "INSERT IGNORE INTO categories (shop_id, name) VALUES (?, ?)");
         mysqli_stmt_bind_param($catSql, 'is', $shopId, $newCategory);
         mysqli_stmt_execute($catSql);
 
+        // Now fetch the ID of the new (or pre-existing) category
         $catRes = mysqli_query($conn, "SELECT id FROM categories WHERE shop_id=$shopId AND name='" . mysqli_real_escape_string($conn, $newCategory) . "'");
         if ($r = mysqli_fetch_assoc($catRes)) {
-            $categoryId = (int)$r['id'];
+            $categoryId = (int)$r['id']; // Use this as the product's category
         }
     }
 
+    // If no category chosen, store NULL (not 0) to keep DB clean
     $finalCatId = $categoryId > 0 ? $categoryId : null;
 
+    // Check if the "Enable Variants" checkbox was ticked
     $hasVariants = isset($_POST['has_variants']) ? 1 : 0;
-    
+
+    // ── Step 3: Determine Base Price ──────────────────────────────────
     // In has_variants mode, standard price is the 1kg price or 500g price if 1kg missing, or 0.
     if ($hasVariants) {
         $price = (float)($_POST['variants']['1kg']['price'] ?? ($_POST['variants']['500g']['price'] ?? 0));
     }
 
+    // ── Step 4: Validate & Insert the Product ────────────────────────────
     if (empty($name) || $price <= 0) {
         $message = 'error:Name and valid base price are required.';
     } else {
+        // Prepared statement to safely insert product data
+        // Parameter types: i=int, s=string, d=double(decimal)
         $stmt = mysqli_prepare($conn, "INSERT INTO products (shop_id, name, flavor, description, price, image_url, is_available, category_id, has_variants) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         mysqli_stmt_bind_param($stmt, 'isssdsiii', $shopId, $name, $flavor, $description, $price, $imageUrl, $available, $finalCatId, $hasVariants);
 
         if (mysqli_stmt_execute($stmt)) {
+            // Get the auto-generated ID of the newly inserted product
             $newProductId = mysqli_insert_id($conn);
-            
-            // Insert variants
+
+            // ── Step 5: Insert Variant Prices ─────────────────────────────
+            // Only insert variants if the checkbox was ticked AND variants were submitted
             if ($hasVariants && isset($_POST['variants'])) {
                 $varStmt = mysqli_prepare($conn, "INSERT INTO product_variants (product_id, weight_label, price) VALUES (?, ?, ?)");
                 foreach ($_POST['variants'] as $weight => $data) {
+                    // Only save weights that were checked AND have a price entered
                     if (!empty($data['enabled']) && !empty($data['price'])) {
                         $vPrice = (float)$data['price'];
                         mysqli_stmt_bind_param($varStmt, 'isd', $newProductId, $weight, $vPrice);
@@ -68,7 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 mysqli_stmt_close($varStmt);
             }
-            
+
+            // Redirect back to products.php with a success flash message
             header('Location: products.php?status=success&msg=' . urlencode('Item added!'));
             exit();
         }
@@ -78,7 +109,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// ─── Load Categories for Dropdown ──────────────────────────────────────────────
+// Only categories belonging to this shop are shown (no cross-shop leakage)
 $categoriesList = mysqli_query($conn, "SELECT * FROM categories WHERE shop_id=$shopId ORDER BY name ASC");
+
+// Parse the message string for display
 [$msgType, $msgText] = $message ? explode(':', $message, 2) : ['', ''];
 ?>
 <!DOCTYPE html>

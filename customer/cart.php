@@ -2,43 +2,71 @@
 /**
  * customer/cart.php
  * =================
- * SHOPPING CART PAGE - Sweet Artisans Theme
+ * SHOPPING CART MANAGEMENT PAGE
+ * 
+ * This page allows customers to view and manage items they've added to their cart.
+ * 
+ * FEATURES:
+ *   - Real-time cart updates (Increase/Decrease quantity, Remove item).
+ *   - Tax calculation: Automatically adds GST (9%) and SGST (9%) to the subtotal.
+ *   - Variant support: Correctly handles different weights/prices for the same product.
+ *   - Automatic redirection to checkout for the correct shop branch.
  */
 
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'customer';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Ensures only customers can see this page
+require_once '../config/db.php';           // Database connection ($conn)
 
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
 $userInitial = strtoupper(substr($userName, 0, 1));
 
 // ─── Handle Cart Actions (POST) ───────────────────────────────────────────────
+/**
+ * All cart modifications (adding, removing, quantity changes) are handled here.
+ * We use prepared statements to prevent SQL Injection when modifying the cart table.
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action    = $_POST['action']     ?? '';
     $productId = (int)($_POST['product_id'] ?? 0);
-    $variantWt = trim($_POST['variant_weight'] ?? '');
+    $variantWt = trim($_POST['variant_weight'] ?? ''); // Important for identifying variant items
 
     if ($action === 'remove' && $productId) {
+        // DELETE a specific item (matched by product ID AND weight)
         $s = mysqli_prepare($conn, "DELETE FROM cart WHERE user_id=? AND product_id=? AND variant_weight=?");
         mysqli_stmt_bind_param($s,'iis',$userId,$productId,$variantWt);
         mysqli_stmt_execute($s);
     } elseif ($action === 'increase' && $productId) {
+        // Increment quantity (+1)
         $s = mysqli_prepare($conn, "UPDATE cart SET quantity=quantity+1 WHERE user_id=? AND product_id=? AND variant_weight=?");
         mysqli_stmt_bind_param($s,'iis',$userId,$productId,$variantWt);
         mysqli_stmt_execute($s);
     } elseif ($action === 'decrease' && $productId) {
+        // Decrement quantity (-1)
         $s = mysqli_prepare($conn, "UPDATE cart SET quantity=quantity-1 WHERE user_id=? AND product_id=? AND variant_weight=?");
         mysqli_stmt_bind_param($s,'iis',$userId,$productId,$variantWt);
         mysqli_stmt_execute($s);
+        // Clean up: If quantity hits 0 or less, remove the item entirely
         mysqli_query($conn, "DELETE FROM cart WHERE user_id=$userId AND quantity <= 0");
     } elseif ($action === 'clear') {
+        // Empty the entire cart for this user
         mysqli_query($conn, "DELETE FROM cart WHERE user_id=$userId");
     }
+    
+    // Redirect back to the same page to prevent "Form Resubmission" browser warnings
     header("Location: cart.php");
     exit();
 }
 
+// ─── Fetch Cart Items & Calculate Totals ──────────────────────────────────────
+/**
+ * Complex query to gather cart data:
+ *   - JOIN products: To get the base name, image, and flavor.
+ *   - JOIN shops: To identify which branch the item belongs to.
+ *   - LEFT JOIN product_variants: To get the correct price for the selected weight.
+ *     If no variant weight is set, we fallback to the base p.price using COALESCE.
+ */
 $cartItems = mysqli_query($conn,
     "SELECT c.*, p.name, p.flavor, p.image_url, p.shop_id, s.name AS shop_name,
             COALESCE(pv.price, p.price) as effective_price
@@ -52,24 +80,27 @@ $cartItems = mysqli_query($conn,
 $subtotal = 0;
 $cartRows = [];
 while ($row = mysqli_fetch_assoc($cartItems)) {
+    // Calculate total for this specific row (Price * Qty)
     $row['item_total'] = $row['effective_price'] * $row['quantity'];
     $subtotal += $row['item_total'];
     $cartRows[] = $row;
 }
 
-$gst = round($subtotal * 0.09, 2);
-$sgst = round($subtotal * 0.09, 2);
+// Calculate tax and grand total
+$gst = round($subtotal * 0.09, 2); // 9% Central GST
+$sgst = round($subtotal * 0.09, 2); // 9% State GST
 $grandTotal = $subtotal + $gst + $sgst;
 
-    $shopName = count($cartRows) > 0 ? $cartRows[0]['shop_name'] : '';
-    $shopId   = count($cartRows) > 0 ? $cartRows[0]['shop_id']   : 0;
+// Helper variables for checkout link
+$shopName = count($cartRows) > 0 ? $cartRows[0]['shop_name'] : '';
+$shopId   = count($cartRows) > 0 ? $cartRows[0]['shop_id']   : 0;
 ?>
 <!DOCTYPE html>
 <html class="light" lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>My Cart - Ghanshyam Bakery &amp; Live Cake Shop</title>
+    <title>My Cart - Ghanshyam Bakery</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script id="tailwind-config">
@@ -107,11 +138,11 @@ $grandTotal = $subtotal + $gst + $sgst;
 </head>
 <body class="bg-surface text-on-surface font-body-md antialiased min-h-screen">
 
-<!-- TopNavBar -->
+<!-- ═══ TOP NAVBAR ═══════════════════════════════════════════════════════════ -->
 <header class="bg-stone-50 border-b border-rose-100 shadow-sm shadow-amber-900/5 sticky top-0 z-50">
     <nav class="flex justify-between items-center w-full px-8 py-4 font-serif text-base tracking-tight">
         <div class="flex items-center gap-6">
-            <img src="../assets/logo/image.png" alt="Ghanshyam Bakery Logo" class="w-10 h-10 object-cover rounded-md"/>
+            <img src="../assets/logo/image.png" alt="Logo" class="w-10 h-10 object-cover rounded-md"/>
             <div>
                 <div class="text-2xl font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</div>
                 <div class="text-sm text-stone-500">Bringing your nearest cake shop just a click away.</div>
@@ -137,7 +168,7 @@ $grandTotal = $subtotal + $gst + $sgst;
 </header>
 
 <div class="flex w-full">
-    <!-- SideNavBar -->
+    <!-- ═══ SIDEBAR NAVIGATION ══════════════════════════════════════════════════ -->
     <aside class="hidden lg:flex flex-col h-[calc(100vh-80px)] w-72 bg-white border-r border-rose-50 shadow-lg shadow-amber-900/5 sticky top-20 p-6 space-y-2 font-serif text-sm font-medium">
         <div class="mb-8">
             <div class="flex items-center gap-3 mb-2">
@@ -157,14 +188,18 @@ $grandTotal = $subtotal + $gst + $sgst;
         <a class="text-stone-500 px-4 py-3 flex items-center gap-3 hover:bg-rose-50/50 rounded-lg transition-all" href="shops.php">
             <span class="material-symbols-outlined">storefront</span> Browse Shops
         </a>
+        <a class="text-amber-900 font-semibold bg-rose-50 rounded-lg px-4 py-3 flex items-center gap-3 scale-[0.98] active:scale-95 duration-200" href="cart.php">
+            <span class="material-symbols-outlined">shopping_cart</span> My Cart
+        </a>
         <a class="text-stone-500 px-4 py-3 flex items-center gap-3 hover:bg-rose-50/50 rounded-lg transition-all" href="my_orders.php">
             <span class="material-symbols-outlined">receipt_long</span> My Orders
         </a>
     </aside>
 
-    <!-- Main Content -->
+    <!-- ═══ MAIN CONTENT: CART OVERVIEW ═════════════════════════════════════════ -->
     <main class="flex-1 p-8 overflow-x-hidden">
         
+        <!-- Header & Clear Cart Action -->
         <div class="mb-8 flex justify-between items-end">
             <div>
                 <h1 class="font-headline-lg text-amber-950">My Cart</h1>
@@ -178,7 +213,8 @@ $grandTotal = $subtotal + $gst + $sgst;
             </div>
             
             <?php if (count($cartRows) > 0): ?>
-            <form method="POST" onsubmit="return confirm('Clear entire cart?')">
+            <!-- Form to clear the entire cart -->
+            <form method="POST" onsubmit="return confirm('Are you sure you want to clear your entire cart?')">
                 <input type="hidden" name="action" value="clear">
                 <button type="submit" class="text-error font-label-md flex items-center gap-1 hover:underline p-2 rounded-lg hover:bg-error-container transition-colors">
                     <span class="material-symbols-outlined text-sm">delete</span> Clear Cart
@@ -189,34 +225,42 @@ $grandTotal = $subtotal + $gst + $sgst;
 
         <?php if (count($cartRows) > 0): ?>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Cart Items -->
+                <!-- ── Column 1 & 2: Cart Items List ── -->
                 <div class="lg:col-span-2 space-y-4">
                     <?php foreach ($cartRows as $item): ?>
                     <div class="bg-white rounded-xl p-4 border border-rose-50 ambient-shadow flex flex-col sm:flex-row items-start sm:items-center gap-4 group">
+                        <!-- Product Image -->
                         <img src="<?= htmlspecialchars($item['image_url'] ?: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80') ?>"
                              alt="Cake" class="w-24 h-24 rounded-lg object-cover bg-stone-50 border border-stone-100">
                         
+                        <!-- Item Details -->
                         <div class="flex-1">
                             <h3 class="font-headline-sm text-lg text-amber-950 mb-1">
                                 <?= htmlspecialchars($item['name']) ?>
+                                <!-- Flavor Badge -->
                                 <?php if (!empty($item['flavor'])): ?>
                                     <span class="text-xs font-semibold text-secondary bg-primary-container px-2 py-0.5 rounded ml-2"><?= htmlspecialchars($item['flavor']) ?></span>
                                 <?php endif; ?>
+                                <!-- Weight Variant Badge -->
                                 <?php if($item['variant_weight']): ?>
                                     <span class="text-sm font-bold text-secondary bg-secondary-container px-2 py-0.5 rounded ml-2"><?= htmlspecialchars($item['variant_weight']) ?></span>
                                 <?php endif; ?>
                             </h3>
                             <p class="text-label-sm text-stone-500 mb-4">₹<?= number_format($item['effective_price'], 2) ?> each</p>
                             
+                            <!-- Quantity Controls -->
                             <div class="flex items-center gap-4">
                                 <div class="flex items-center bg-surface-container rounded-lg border border-rose-100">
+                                    <!-- Decrease Button -->
                                     <form method="POST">
                                         <input type="hidden" name="action" value="decrease">
                                         <input type="hidden" name="product_id" value="<?= $item['product_id'] ?>">
                                         <input type="hidden" name="variant_weight" value="<?= htmlspecialchars($item['variant_weight']) ?>">
                                         <button type="submit" class="w-8 h-8 flex items-center justify-center text-secondary hover:bg-rose-50 rounded-l-lg transition-colors">−</button>
                                     </form>
+                                    <!-- Current Quantity Display -->
                                     <span class="w-8 text-center font-bold text-amber-950 text-sm"><?= $item['quantity'] ?></span>
+                                    <!-- Increase Button -->
                                     <form method="POST">
                                         <input type="hidden" name="action" value="increase">
                                         <input type="hidden" name="product_id" value="<?= $item['product_id'] ?>">
@@ -224,6 +268,8 @@ $grandTotal = $subtotal + $gst + $sgst;
                                         <button type="submit" class="w-8 h-8 flex items-center justify-center text-secondary hover:bg-rose-50 rounded-r-lg transition-colors">+</button>
                                     </form>
                                 </div>
+                                
+                                <!-- Remove Link -->
                                 <form method="POST">
                                     <input type="hidden" name="action" value="remove">
                                     <input type="hidden" name="product_id" value="<?= $item['product_id'] ?>">
@@ -233,6 +279,7 @@ $grandTotal = $subtotal + $gst + $sgst;
                             </div>
                         </div>
                         
+                        <!-- Row Total Price -->
                         <div class="text-right sm:text-left mt-2 sm:mt-0 w-full sm:w-auto flex sm:flex-col justify-between items-center sm:items-end">
                             <p class="text-sm text-stone-500 sm:hidden">Total:</p>
                             <span class="font-headline-sm text-xl text-amber-950">₹<?= number_format($item['item_total'], 2) ?></span>
@@ -241,11 +288,12 @@ $grandTotal = $subtotal + $gst + $sgst;
                     <?php endforeach; ?>
                 </div>
 
-                <!-- Order Summary -->
+                <!-- ── Column 3: Order Summary (Sticky) ── -->
                 <div class="lg:col-span-1">
                     <div class="bg-stone-50 rounded-xl p-6 border border-rose-100 ambient-shadow sticky top-28">
                         <h2 class="font-headline-sm text-xl text-amber-950 mb-6">Order Summary</h2>
                         
+                        <!-- Simple item breakdown -->
                         <div class="space-y-4 mb-6">
                             <?php foreach ($cartRows as $item): ?>
                             <div class="flex justify-between text-sm">
@@ -260,6 +308,7 @@ $grandTotal = $subtotal + $gst + $sgst;
                             <?php endforeach; ?>
                         </div>
                         
+                        <!-- Tax & Subtotal Breakdown -->
                         <div class="border-t border-rose-100 pt-4 space-y-3 mb-6">
                             <div class="flex justify-between text-sm">
                                 <span class="text-stone-500">Subtotal</span>
@@ -275,6 +324,7 @@ $grandTotal = $subtotal + $gst + $sgst;
                             </div>
                         </div>
                         
+                        <!-- Final Grand Total -->
                         <div class="border-t border-rose-200 pt-4 mb-8">
                             <div class="flex justify-between items-end">
                                 <span class="font-bold text-amber-950">Total Amount</span>
@@ -282,6 +332,7 @@ $grandTotal = $subtotal + $gst + $sgst;
                             </div>
                         </div>
                         
+                        <!-- Checkout Action Buttons -->
                         <a href="checkout.php?shop_id=<?= $shopId ?>" class="w-full flex justify-center py-3 bg-secondary text-white rounded-lg font-label-md hover:bg-on-secondary-fixed-variant transition-colors mb-3 shadow-md shadow-secondary/20">
                             Proceed to Checkout
                         </a>
@@ -292,6 +343,7 @@ $grandTotal = $subtotal + $gst + $sgst;
                 </div>
             </div>
         <?php else: ?>
+            <!-- ── EMPTY STATE ── -->
             <div class="bg-white rounded-xl py-16 px-8 text-center border border-rose-50 ambient-shadow max-w-2xl mx-auto">
                 <div class="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">
                     <span class="material-symbols-outlined text-4xl text-secondary">shopping_cart</span>
@@ -307,7 +359,7 @@ $grandTotal = $subtotal + $gst + $sgst;
     </main>
 </div>
 
-<!-- Footer -->
+<!-- ═══ FOOTER ═══════════════════════════════════════════════════════════════ -->
 <footer class="bg-stone-100 border-t border-stone-200 mt-auto">
     <div class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 font-serif text-xs uppercase tracking-widest">
         <div class="flex flex-col items-center md:items-start gap-4">

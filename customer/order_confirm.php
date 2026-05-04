@@ -2,20 +2,38 @@
 /**
  * customer/order_confirm.php
  * ==========================
- * ORDER CONFIRMATION PAGE - Sweet Artisans Theme
+ * ORDER SUCCESS / CONFIRMATION PAGE
+ * 
+ * This page is displayed immediately after a successful checkout.
+ * It serves as a digital receipt for the customer.
+ * 
+ * FEATURES:
+ *   - Fetches the newly created order details.
+ *   - Displays order number, shop location, and delivery/pickup info.
+ *   - Lists all items included in the order.
+ *   - Provides quick links to track the order in 'My Orders'.
  */
 
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'customer';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Ensures only the buyer can see this
+require_once '../config/db.php';           // Database connection ($conn)
 
 $userId = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
 $userInitial = strtoupper(substr($userName, 0, 1));
 
+// ─── Fetch Order Details ──────────────────────────────────────────────────────
 $orderId = (int)($_GET['order_id'] ?? 0);
-if ($orderId === 0) { header("Location: dashboard.php"); exit(); }
+if ($orderId === 0) { 
+    header("Location: dashboard.php"); // No order ID? Redirect to safety.
+    exit(); 
+}
 
+/**
+ * Fetch the order and shop information.
+ * Security: We filter by customer_id to ensure a user cannot view someone else's order by guessing the ID.
+ */
 $orderRes = mysqli_query($conn,
     "SELECT o.*, s.name AS shop_name, s.address AS shop_address, s.phone AS shop_phone
      FROM orders o JOIN shops s ON o.shop_id = s.id
@@ -23,8 +41,14 @@ $orderRes = mysqli_query($conn,
 );
 $order = mysqli_fetch_assoc($orderRes);
 
-if (!$order) { header("Location: dashboard.php"); exit(); }
+if (!$order) { 
+    header("Location: dashboard.php"); // Order not found or access denied.
+    exit(); 
+}
 
+/**
+ * Fetch all items belonging to this specific order.
+ */
 $itemsRes = mysqli_query($conn,
     "SELECT oi.*, p.name AS product_name, p.flavor AS product_flavor 
      FROM order_items oi 
@@ -39,7 +63,7 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Order Confirmed - Sweet Artisans</title>
+    <title>Order Confirmed - Ghanshyam Bakery</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script id="tailwind-config">
@@ -77,66 +101,25 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
 </head>
 <body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex flex-col">
 
-<!-- TopNavBar -->
+<!-- ═══ TOP NAVBAR ═══════════════════════════════════════════════════════════ -->
 <header class="bg-stone-50 border-b border-rose-100 shadow-sm shadow-amber-900/5 sticky top-0 z-50">
-    <nav class="flex justify-between items-center w-full px-8 py-4 max-w-screen-2xl mx-auto font-serif text-base tracking-tight">
-        <div class="flex items-center gap-12">
-            <span class="text-2xl font-bold text-amber-900">Sweet Artisans</span>
-            <div class="hidden lg:flex items-center bg-stone-100 rounded-full px-4 py-2 w-96 border border-rose-50">
-                <span class="material-symbols-outlined text-stone-400 mr-2">search</span>
-                <input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder-stone-400" placeholder="Search for artisanal cakes..." type="text"/>
-            </div>
-        </div>
-        <div class="flex items-center gap-8">
-            <div class="hidden md:flex gap-6">
-                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="dashboard.php">Home</a>
-                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="shops.php">Shop</a>
-                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="cart.php">Cart</a>
-                <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="my_orders.php">Orders</a>
-            </div>
-            <div class="flex items-center gap-4">
-                <a href="cart.php" class="text-amber-950 p-2 hover:bg-rose-50 rounded-full transition-colors">
-                    <span class="material-symbols-outlined">shopping_cart</span>
-                </a>
-                <a href="../logout.php" class="text-amber-950 p-2 hover:bg-rose-50 rounded-full transition-colors" title="Logout">
-                    <span class="material-symbols-outlined">logout</span>
-                </a>
+    <nav class="flex justify-between items-center w-full px-8 py-4 font-serif text-base tracking-tight">
+        <div class="flex items-center gap-6">
+            <img src="../assets/logo/image.png" alt="Logo" class="w-10 h-10 object-cover rounded-md"/>
+            <div>
+                <div class="text-2xl font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</div>
             </div>
         </div>
     </nav>
 </header>
 
-<div class="flex max-w-screen-2xl mx-auto w-full flex-1">
-    <!-- SideNavBar -->
-    <aside class="hidden lg:flex flex-col h-[calc(100vh-80px)] w-72 bg-white border-r border-rose-50 shadow-lg shadow-amber-900/5 sticky top-20 p-6 space-y-2 font-serif text-sm font-medium">
-        <div class="mb-8">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-amber-950 font-bold text-lg">
-                    <?= $userInitial ?>
-                </div>
-                <div>
-                    <p class="font-bold text-amber-950"><?= htmlspecialchars($userName) ?></p>
-                    <p class="text-xs text-stone-500">Customer</p>
-                </div>
-            </div>
-        </div>
-        <p class="text-[10px] uppercase tracking-widest text-stone-400 font-bold px-4 mb-2">Navigation</p>
-        <a class="text-stone-500 px-4 py-3 flex items-center gap-3 hover:bg-rose-50/50 rounded-lg transition-all" href="dashboard.php">
-            <span class="material-symbols-outlined">home</span> Home
-        </a>
-        <a class="text-stone-500 px-4 py-3 flex items-center gap-3 hover:bg-rose-50/50 rounded-lg transition-all" href="shops.php">
-            <span class="material-symbols-outlined">storefront</span> Browse Shops
-        </a>
-        <a class="text-stone-500 px-4 py-3 flex items-center gap-3 hover:bg-rose-50/50 rounded-lg transition-all" href="my_orders.php">
-            <span class="material-symbols-outlined">receipt_long</span> My Orders
-        </a>
-    </aside>
-
-    <!-- Main Content -->
+<div class="flex w-full flex-1">
+    <!-- ═══ MAIN CONTENT: ORDER SUCCESS ═════════════════════════════════════════ -->
     <main class="flex-1 p-8 overflow-x-hidden flex items-center justify-center">
         
         <div class="w-full max-w-2xl bg-white rounded-2xl p-8 md:p-12 border border-rose-50 ambient-shadow text-center">
             
+            <!-- Big Success Icon -->
             <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span class="material-symbols-outlined text-[56px]">check_circle</span>
             </div>
@@ -144,6 +127,7 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
             <h1 class="font-headline-lg text-3xl text-amber-950 mb-2">Order Confirmed!</h1>
             <p class="text-body-md text-stone-500 mb-8">Your artisanal treats are being prepared with love.</p>
             
+            <!-- Digital Receipt Card -->
             <div class="bg-surface-container-low rounded-xl p-6 border border-rose-100 mb-8 text-left relative overflow-hidden">
                 <div class="absolute top-0 right-0 p-4">
                     <span class="px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-[10px] uppercase font-bold tracking-wider">
@@ -155,12 +139,14 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
                 <p class="font-headline-sm text-2xl text-secondary mb-6">#<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Shop Information -->
                     <div>
                         <p class="text-xs text-stone-500 font-bold tracking-wider uppercase mb-2">Shop Details</p>
                         <p class="font-bold text-amber-950"><?= htmlspecialchars($order['shop_name']) ?></p>
                         <p class="text-sm text-stone-600"><?= htmlspecialchars($order['shop_address']) ?></p>
                     </div>
                     
+                    <!-- Destination Information -->
                     <div>
                         <p class="text-xs text-stone-500 font-bold tracking-wider uppercase mb-2">
                             <?= $order['order_type'] === 'delivery' ? 'Delivery To' : 'Pickup Schedule' ?>
@@ -174,6 +160,7 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
                     </div>
                 </div>
                 
+                <!-- Detailed Item List -->
                 <div class="mt-6 pt-6 border-t border-rose-100">
                     <p class="text-xs text-stone-500 font-bold tracking-wider uppercase mb-3">Order Items</p>
                     <div class="space-y-2">
@@ -182,6 +169,7 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
                             <span class="text-stone-600">
                                 <span class="font-bold text-amber-950"><?= $item['quantity'] ?>x</span> 
                                 <?= htmlspecialchars($item['product_name']) ?>
+                                <!-- Product Metadata Badges -->
                                 <?php if(!empty($item['product_flavor'])): ?>
                                     <span class="text-[10px] font-bold text-secondary bg-primary-container px-1.5 py-0.5 rounded ml-1"><?= htmlspecialchars($item['product_flavor']) ?></span>
                                 <?php endif; ?>
@@ -193,6 +181,7 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
                         </div>
                         <?php endforeach; ?>
                     </div>
+                    <!-- Final Paid Amount -->
                     <div class="flex justify-between items-center mt-4 pt-4 border-t border-rose-100">
                         <span class="font-bold text-amber-950">Total Paid</span>
                         <span class="font-headline-sm text-xl text-secondary">₹<?= number_format($order['total_amount'], 2) ?></span>
@@ -200,6 +189,7 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
                 </div>
             </div>
             
+            <!-- Navigation Links -->
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="my_orders.php" class="px-6 py-3 bg-secondary text-white rounded-lg font-label-md hover:bg-on-secondary-fixed-variant transition-colors shadow-sm">
                     Track Order Status
@@ -214,12 +204,12 @@ while ($row = mysqli_fetch_assoc($itemsRes)) { $items[] = $row; }
     </main>
 </div>
 
-<!-- Footer -->
+<!-- Simple Footer -->
 <footer class="bg-stone-100 border-t border-stone-200 mt-auto">
-    <div class="max-w-screen-2xl mx-auto w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 font-serif text-xs uppercase tracking-widest">
-        <div class="flex flex-col items-center md:items-start gap-4">
-            <span class="text-lg font-bold text-amber-900">Sweet Artisans</span>
-            <p class="text-stone-500 normal-case tracking-normal text-sm max-w-xs text-center md:text-left">© 2024 Sweet Artisans Cake Studio. Artisanal excellence in every bite.</p>
+    <div class="max-w-screen-2xl mx-auto w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 font-serif text-xs uppercase tracking-widest text-center md:text-left">
+        <div>
+            <span class="text-lg font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</span>
+            <p class="text-stone-500 normal-case tracking-normal text-sm mt-2">© 2024 Ghanshyam Bakery &amp; Live Cake Shop. Artisanal excellence in every bite.</p>
         </div>
     </div>
 </footer>

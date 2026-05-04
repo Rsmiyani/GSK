@@ -2,16 +2,31 @@
 /**
  * customer/dashboard.php
  * ======================
- * CUSTOMER HOME DASHBOARD - Sweet Artisans Theme
+ * CUSTOMER HOME DASHBOARD
+ * 
+ * This is the landing page for logged-in customers.
+ * It provides a personalized experience featuring:
+ *   - A "Live Order Status" widget for their most recent active order.
+ *   - A carousel of nearby/available bakery branches.
+ *   - A "Recommended" section showcasing top-selling cakes.
+ * 
+ * DESIGN THEME: "Sweet Artisans" (Warm tones, Noto Serif typography).
  */
 
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'customer';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Ensures only customers can access this page
+require_once '../config/db.php';           // Database connection ($conn)
 
-$uid = $_SESSION['user_id'];
+$uid = $_SESSION['user_id']; // Current logged-in user's ID
 
-// Get active order (if any)
+// ─── Live Order Tracker ───────────────────────────────────────────────────────
+/**
+ * Fetch the customer's most recent "active" order.
+ * Active statuses: 'pending', 'preparing', 'ready'.
+ * Once an order is 'completed' or 'cancelled', it disappears from this widget.
+ * We also subquery to get the image of the first product in the order for display.
+ */
 $activeOrder = null;
 $res = mysqli_query($conn, "
     SELECT o.*, s.name as shop_name,
@@ -25,14 +40,22 @@ if ($row = mysqli_fetch_assoc($res)) {
     $activeOrder = $row;
 }
 
-// Get nearby/active shops (up to 3)
+// ─── Nearby Branches ──────────────────────────────────────────────────────────
+/**
+ * Fetch up to 3 active bakery branches to show in the carousel.
+ * (Future update: could be sorted by actual GPS distance to the user).
+ */
 $shops = [];
 $res = mysqli_query($conn, "SELECT * FROM shops WHERE is_active=1 LIMIT 3");
 while ($row = mysqli_fetch_assoc($res)) {
     $shops[] = $row;
 }
 
-// Get top 3 most sold products for "Recommended"
+// ─── Recommended Products (Best Sellers) ──────────────────────────────────────
+/**
+ * Fetch top 3 products based on sales volume (SUM of quantity in order_items).
+ * We only show products from active shops that are currently "In Stock" (is_available=1).
+ */
 $products = [];
 $res = mysqli_query($conn, "
     SELECT p.*, s.name as shop_name, COALESCE(SUM(oi.quantity), 0) as total_sold
@@ -48,18 +71,22 @@ while ($row = mysqli_fetch_assoc($res)) {
     $products[] = $row;
 }
 
-// Get user info
+// ─── User Profile Info ────────────────────────────────────────────────────────
 $userName = $_SESSION['user_name'];
-$userInitial = strtoupper(substr($userName, 0, 1));
+$userInitial = strtoupper(substr($userName, 0, 1)); // Used for the circular avatar
 ?>
 <!DOCTYPE html>
 <html class="light" lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Customer Dashboard - Ghanshyam Bakery & Live Cake Shop</title>
+    <title>Customer Dashboard - Ghanshyam Bakery</title>
+    
+    <!-- External Assets: Tailwind CSS, Google Fonts, and Material Icons -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Tailwind Configuration: Defining our custom "Sweet Artisans" color palette -->
     <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -142,23 +169,28 @@ $userInitial = strtoupper(substr($userName, 0, 1));
 </head>
 <body class="bg-surface text-on-surface font-body-md antialiased min-h-screen">
 
-<!-- TopNavBar -->
+<!-- ═══ TOP NAVIGATION BAR ═══════════════════════════════════════════════════ -->
 <header class="bg-stone-50 border-b border-rose-100 shadow-sm shadow-amber-900/5 sticky top-0 z-50">
     <nav class="flex justify-between items-center w-full px-8 py-4 font-serif text-base tracking-tight">
+        <!-- Logo and Branding -->
         <div class="flex items-center gap-6">
-            <img src="../assets/logo/image.png" alt="Ghanshyam Bakery Logo" class="w-10 h-10 object-cover rounded-md"/>
+            <img src="../assets/logo/image.png" alt="Logo" class="w-10 h-10 object-cover rounded-md"/>
             <div>
                 <div class="text-2xl font-bold text-amber-900">Ghanshyam Bakery &amp; Live Cake Shop</div>
                 <div class="text-sm text-stone-500">Bringing your nearest cake shop just a click away.</div>
             </div>
         </div>
-            <div class="flex items-center gap-8">
+        
+        <!-- Desktop Menu Links -->
+        <div class="flex items-center gap-8">
             <div class="hidden md:flex gap-6">
                 <a class="text-amber-900 border-b-2 border-amber-900 font-bold pb-1 duration-300 ease-in-out" href="dashboard.php">Home</a>
                 <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="shops.php">Shop</a>
                 <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="cart.php">Cart</a>
                 <a class="text-stone-500 font-medium hover:text-amber-700 transition-colors duration-300 ease-in-out" href="my_orders.php">Orders</a>
             </div>
+            
+            <!-- Icon Actions (Cart & Logout) -->
             <div class="flex items-center gap-4">
                 <a href="cart.php" class="text-amber-950 p-2 hover:bg-rose-50 rounded-full transition-colors">
                     <span class="material-symbols-outlined">shopping_cart</span>
@@ -172,8 +204,9 @@ $userInitial = strtoupper(substr($userName, 0, 1));
 </header>
 
 <div class="flex w-full">
-    <!-- SideNavBar -->
+    <!-- ═══ SIDEBAR NAVIGATION (Desktop) ═══════════════════════════════════════ -->
     <aside class="hidden lg:flex flex-col h-[calc(100vh-80px)] w-72 bg-white border-r border-rose-50 shadow-lg shadow-amber-900/5 sticky top-20 p-6 space-y-2 font-serif text-sm font-medium">
+        <!-- User Avatar Card -->
         <div class="mb-8">
             <div class="flex items-center gap-3 mb-2">
                 <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-amber-950 font-bold text-lg">
@@ -185,6 +218,8 @@ $userInitial = strtoupper(substr($userName, 0, 1));
                 </div>
             </div>
         </div>
+        
+        <!-- Navigation Menu -->
         <p class="text-[10px] uppercase tracking-widest text-stone-400 font-bold px-4 mb-2">Navigation</p>
         <a class="bg-rose-50 text-amber-900 font-semibold rounded-lg px-4 py-3 flex items-center gap-3 scale-[0.98] active:scale-95 duration-200" href="dashboard.php">
             <span class="material-symbols-outlined">home</span> Home
@@ -197,19 +232,25 @@ $userInitial = strtoupper(substr($userName, 0, 1));
         </a>
     </aside>
 
-    <!-- Main Content -->
+    <!-- ═══ MAIN CONTENT AREA ══════════════════════════════════════════════════ -->
     <main class="flex-1 p-margin overflow-x-hidden">
         
-        <!-- Live Order Status Widget -->
+        <!-- ── Live Order Status Widget ─────────────────────────────────────────
+             Only shown if the customer has an active order (pending/preparing/ready) -->
         <?php if ($activeOrder): ?>
         <section class="mb-12">
             <div class="bg-white rounded-xl p-8 border border-rose-100 ambient-shadow relative overflow-hidden flex flex-col md:flex-row items-center gap-8">
+                <!-- Decorative background element -->
                 <div class="absolute top-0 right-0 w-32 h-32 bg-secondary-container/20 rounded-bl-full"></div>
+                
+                <!-- Product Image Preview -->
                 <div class="relative z-10 w-full md:w-1/3">
                     <div class="aspect-square rounded-lg bg-surface-container-low flex items-center justify-center p-4">
                         <img class="w-full h-full object-cover rounded-md shadow-md" src="<?= htmlspecialchars($activeOrder['product_image'] ?: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=80') ?>" alt="Cake">
                     </div>
                 </div>
+                
+                <!-- Progress Info -->
                 <div class="flex-1 space-y-4">
                     <div class="flex items-center gap-3">
                         <span class="px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-label-sm uppercase">Live Order Status</span>
@@ -221,18 +262,23 @@ $userInitial = strtoupper(substr($userName, 0, 1));
                     <h2 class="font-headline-md text-on-surface">Your order from <?= htmlspecialchars($activeOrder['shop_name']) ?> is <?= $activeOrder['status'] ?></h2>
                     
                     <?php 
+                        // Map status strings to numeric percentages for the progress bar
                         $statusMap = ['pending'=>25, 'preparing'=>50, 'ready'=>75, 'completed'=>100];
                         $progress = $statusMap[trim(strtolower($activeOrder['status']))] ?? 0;
                     ?>
+                    <!-- Progress Bar -->
                     <div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
                         <div class="h-full bg-secondary transition-all duration-1000" style="width: <?= $progress ?>%"></div>
                     </div>
+                    
+                    <!-- Progress Labels -->
                     <div class="grid grid-cols-4 text-label-sm text-stone-500 font-medium text-center -mx-4">
                         <span class="<?= $progress>=25 ? 'text-secondary font-bold' : '' ?>">Pending</span>
                         <span class="<?= $progress>=50 ? 'text-secondary font-bold' : '' ?>">Preparing</span>
                         <span class="<?= $progress>=75 ? 'text-secondary font-bold' : '' ?>">Ready</span>
                         <span class="<?= $progress>=100 ? 'text-secondary font-bold' : '' ?>">Completed</span>
                     </div>
+                    
                     <p class="text-body-md text-on-surface-variant">Order #<?= str_pad($activeOrder['id'], 4, '0', STR_PAD_LEFT) ?> • Total: ₹<?= number_format($activeOrder['total_amount'], 2) ?></p>
                     <a href="my_orders.php" class="mt-2 inline-block px-4 py-2 bg-secondary text-white rounded-lg font-label-md hover:bg-on-secondary-fixed-variant transition-colors">View Details</a>
                 </div>
@@ -240,7 +286,7 @@ $userInitial = strtoupper(substr($userName, 0, 1));
         </section>
         <?php endif; ?>
 
-        <!-- Nearby Branches Carousel -->
+        <!-- ── Nearby Branches Carousel ──────────────────────────────────────── -->
         <section class="mb-12">
             <div class="flex justify-between items-end mb-6">
                 <div>
@@ -251,6 +297,7 @@ $userInitial = strtoupper(substr($userName, 0, 1));
                     View All Branches <span class="material-symbols-outlined text-sm">arrow_forward</span>
                 </a>
             </div>
+            <!-- Horizontal scrollable list -->
             <div class="flex gap-gutter overflow-x-auto hide-scrollbar pb-4 -mx-4 px-4">
                 <?php foreach($shops as $shop): ?>
                 <div class="min-w-[320px] bg-white rounded-xl p-6 border border-rose-50 ambient-shadow flex flex-col gap-4">
@@ -272,7 +319,7 @@ $userInitial = strtoupper(substr($userName, 0, 1));
             </div>
         </section>
 
-        <!-- Recommended Section (Bento Style) -->
+        <!-- ── Recommended Section (Bento Grid) ──────────────────────────────── -->
         <section>
             <div class="mb-6">
                 <h2 class="font-headline-sm text-on-surface">Recommended for You</h2>
@@ -282,18 +329,23 @@ $userInitial = strtoupper(substr($userName, 0, 1));
                 <?php if (count($products) > 0): ?>
                     <?php foreach ($products as $p): ?>
                     <?php
+                        // Text processing: truncate long descriptions to keep the layout consistent
                         $description = trim((string)($p['description'] ?? ''));
                         $shortDescription = $description !== '' ? (mb_strlen($description) > 86 ? mb_substr($description, 0, 86) . '...' : $description) : 'Freshly prepared and ready to order.';
+                        
                         $categoryLabel = trim((string)($p['category_name'] ?? ''));
                         $shopLabel = trim((string)($p['shop_name'] ?? ''));
-                        $metaLabel = $categoryLabel !== '' ? $categoryLabel : $shopLabel;
+                        $metaLabel = $categoryLabel !== '' ? $categoryLabel : $shopLabel; // Category takes priority for the badge
                     ?>
                     <article class="bg-white rounded-2xl overflow-hidden border border-rose-50 ambient-shadow group flex flex-col h-full">
+                        <!-- Product Image Wrapper -->
                         <div class="relative aspect-[4/3] overflow-hidden bg-stone-100">
                             <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                  src="<?= htmlspecialchars($p['image_url'] ?: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&q=80') ?>"
                                  alt="<?= htmlspecialchars($p['name']) ?>"
                                  onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&q=80'"/>
+                            
+                            <!-- Floating Badge (Category or Shop Name) -->
                             <?php if ($metaLabel !== ''): ?>
                                 <div class="absolute top-4 left-4">
                                     <span class="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-amber-900 shadow-sm backdrop-blur">
@@ -302,11 +354,15 @@ $userInitial = strtoupper(substr($userName, 0, 1));
                                 </div>
                             <?php endif; ?>
                         </div>
+                        
+                        <!-- Product Details -->
                         <div class="p-5 flex flex-col gap-4 flex-1">
                             <div class="flex items-start justify-between gap-4">
                                 <div class="min-w-0">
                                     <h3 class="font-headline-sm text-xl text-amber-950 truncate"><?= htmlspecialchars($p['name']) ?></h3>
-                                    <?php if (!empty($p['flavor'])): ?><p class="text-xs font-semibold text-secondary mt-1 truncate">Flavor: <?= htmlspecialchars($p['flavor']) ?></p><?php endif; ?>
+                                    <?php if (!empty($p['flavor'])): ?>
+                                        <p class="text-xs font-semibold text-secondary mt-1 truncate">Flavor: <?= htmlspecialchars($p['flavor']) ?></p>
+                                    <?php endif; ?>
                                     <p class="text-sm text-stone-500 mt-1 truncate"><?= htmlspecialchars($shopLabel) ?></p>
                                 </div>
                                 <span class="shrink-0 font-headline-sm text-xl text-secondary">
@@ -316,19 +372,25 @@ $userInitial = strtoupper(substr($userName, 0, 1));
                                     ₹<?= number_format($p['price'], 2) ?>
                                 </span>
                             </div>
+                            
                             <p class="text-sm leading-6 text-stone-600 flex-1"><?= htmlspecialchars($shortDescription) ?></p>
+                            
+                            <!-- Action Buttons -->
                              <div class="flex items-center gap-3 pt-1 mt-auto">
                                 <?php if ($p['has_variants']): ?>
+                                    <!-- Variants require selection on the shop detail page -->
                                     <a href="shop_detail.php?id=<?= $p['shop_id'] ?>#product_<?= $p['id'] ?>" class="flex-1 inline-flex items-center justify-center gap-2 bg-secondary text-white py-3 rounded-xl font-label-md hover:bg-on-secondary-fixed-variant transition-colors shadow-md shadow-secondary/15">
                                         <span class="material-symbols-outlined text-[18px]">weight</span>
                                         Select Weight
                                     </a>
                                 <?php else: ?>
+                                    <!-- Simple products can be added directly via AJAX -->
                                     <button type="button" onclick="addProductToCart(this, <?= (int)$p['id'] ?>, <?= (int)$p['shop_id'] ?>)" class="flex-1 inline-flex items-center justify-center gap-2 bg-secondary text-white py-3 rounded-xl font-label-md hover:bg-on-secondary-fixed-variant transition-colors shadow-md shadow-secondary/15">
                                         <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>
                                         Add to Cart
                                     </button>
                                 <?php endif; ?>
+                                
                                 <a href="shop_detail.php?id=<?= $p['shop_id'] ?>" class="w-11 h-11 rounded-xl border border-secondary text-secondary hover:bg-rose-50 transition-colors flex items-center justify-center" title="View shop">
                                     <span class="material-symbols-outlined text-[18px]">storefront</span>
                                 </a>
@@ -342,7 +404,7 @@ $userInitial = strtoupper(substr($userName, 0, 1));
     </main>
 </div>
 
-<!-- Footer -->
+<!-- ═══ FOOTER ═══════════════════════════════════════════════════════════════ -->
 <footer class="bg-stone-100 border-t border-stone-200 mt-auto">
     <div class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-8 font-serif text-xs uppercase tracking-widest">
         <div class="flex flex-col items-center md:items-start gap-4">
@@ -359,21 +421,42 @@ $userInitial = strtoupper(substr($userName, 0, 1));
         </div>
     </div>
 </footer>
+
+<!-- ═══ CLIENT-SIDE SCRIPTS ══════════════════════════════════════════════════ -->
 <script>
+/**
+ * addProductToCart(button, productId, shopId)
+ * ==========================================
+ * Handles the "Add to Cart" button click using AJAX.
+ * 
+ * Logic:
+ *   1. Updates button UI to "Adding..." state.
+ *   2. Sends a POST request to add_to_cart.php.
+ *   3. If successful, shows a "Checked" icon briefly, then reverts.
+ *   4. Handles errors with a browser alert.
+ */
 function addProductToCart(button, productId, shopId) {
     const originalHtml = button.innerHTML;
-    button.disabled = true;
+    button.disabled = true; // Prevent double-clicks
     button.classList.add('opacity-75');
     button.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Adding...';
+
+    // Build the request body
+    const params = new URLSearchParams({ 
+        product_id: productId, 
+        shop_id: shopId, 
+        quantity: 1 
+    });
 
     fetch('add_to_cart.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ product_id: productId, shop_id: shopId, quantity: 1 })
+        body: params
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Visual feedback for success
             button.innerHTML = '<span class="material-symbols-outlined text-[18px]">check</span> Added';
             setTimeout(() => {
                 button.innerHTML = originalHtml;
@@ -381,6 +464,7 @@ function addProductToCart(button, productId, shopId) {
                 button.classList.remove('opacity-75');
             }, 1400);
         } else {
+            // Handle logical errors (e.g. out of stock or wrong shop)
             button.innerHTML = originalHtml;
             button.disabled = false;
             button.classList.remove('opacity-75');
@@ -388,6 +472,7 @@ function addProductToCart(button, productId, shopId) {
         }
     })
     .catch(() => {
+        // Handle network errors
         button.innerHTML = originalHtml;
         button.disabled = false;
         button.classList.remove('opacity-75');

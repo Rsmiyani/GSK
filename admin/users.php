@@ -1,33 +1,52 @@
 <?php
 /**
- * admin/users.php — USER MANAGEMENT (Fully Responsive)
- * Admin can CREATE, CHANGE ROLE, and DELETE user accounts.
- * New: hamburger sidebar, responsive table, stacked form on mobile.
+ * admin/users.php
+ * ================
+ * USER ACCOUNT MANAGEMENT
+ *
+ * Admin can:
+ *   - View all user accounts (customers, shopkeepers, admins)
+ *   - Change a user's role (e.g. promote customer to shopkeeper)
+ *   - Delete a user account
+ *   - Create a new admin or shopkeeper account
+ *
+ * SECURITY RULES:
+ *   - Admin cannot change their own role (prevents self-lockout)
+ *   - Admin cannot delete their own account
+ *
+ * NEW: Hamburger sidebar, responsive table, stacked form on mobile.
  */
+
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'admin';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Redirects non-admins away
+require_once '../config/db.php';           // Opens $conn
 
-$message = '';
+$message = ''; // Result message shown after form actions
 
+// ─── Handle POST Actions ───────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    // ── Change Role ──────────────────────────────────────────────────────────
+    // ── CHANGE ROLE: Update a user's role in the database ───────────────────────
     if ($action === 'change_role') {
         $uid     = (int)($_POST['user_id'] ?? 0);
         $newRole = $_POST['new_role'] ?? '';
+        // Security check: Admin can't change their own role (could lock themselves out)
         if ($uid === (int)$_SESSION['user_id']) {
             $message = 'error:You cannot change your own role.';
         } elseif (in_array($newRole,['customer','shopkeeper','admin'])) {
+            // Only allow valid, known roles — prevents injecting custom roles
             $s = mysqli_prepare($conn,"UPDATE users SET role=? WHERE id=?");
             mysqli_stmt_bind_param($s,'si',$newRole,$uid);
+            // ucfirst() capitalizes: 'shopkeeper' → 'Shopkeeper' for the message
             mysqli_stmt_execute($s) ? $message='success:Role updated to '.ucfirst($newRole).'.' : $message='error:Update failed.';
         }
 
-    // ── Delete User ──────────────────────────────────────────────────────────
+    // ── DELETE USER: Permanently remove an account ─────────────────────────────
     } elseif ($action === 'delete') {
         $uid = (int)($_POST['user_id'] ?? 0);
+        // Security check: Admin can't delete themselves (prevents admin lockout)
         if ($uid === (int)$_SESSION['user_id']) {
             $message = 'error:You cannot delete your own account.';
         } else {
@@ -38,17 +57,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ─── Fetch Data ───────────────────────────────────────────────────────────────
+// ─── Fetch All Users ────────────────────────────────────────────────────────────
+// Subquery counts how many orders each customer has placed
+// ORDER BY FIELD() puts admins first, shopkeepers second, customers last
 $users = mysqli_query($conn,
     "SELECT *, (SELECT COUNT(*) FROM orders WHERE customer_id=users.id) AS order_count
      FROM users ORDER BY FIELD(role,'admin','shopkeeper','customer'), created_at DESC"
 );
+
+// Individual counts for the summary header badges
 $cAdmin = mysqli_fetch_assoc(mysqli_query($conn,"SELECT COUNT(*) c FROM users WHERE role='admin'"))['c'];
 $cShop  = mysqli_fetch_assoc(mysqli_query($conn,"SELECT COUNT(*) c FROM users WHERE role='shopkeeper'"))['c'];
 $cCust  = mysqli_fetch_assoc(mysqli_query($conn,"SELECT COUNT(*) c FROM users WHERE role='customer'"))['c'];
 
+// Parse message: 'success:User deleted.' → $msgType='success', $msgText='User deleted.'
 [$msgType,$msgText] = $message ? explode(':',$message,2) : ['',''];
+
+// Maps role names to CSS badge classes (for the colored pill badges in the table)
 $roleColors = ['admin'=>'badge-pending','shopkeeper'=>'badge-preparing','customer'=>'badge-active'];
+// Maps role names to emoji icons for visual clarity
 $roleEmoji  = ['admin'=>'🔑','shopkeeper'=>'🏪','customer'=>'👤'];
 ?>
 <!DOCTYPE html>

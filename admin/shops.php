@@ -1,61 +1,93 @@
 <?php
 /**
- * admin/shops.php - SHOP BRANCH MANAGEMENT
- * Admin can add, edit, delete, and toggle shop branches.
- * Each shop has GPS coordinates (lat/lng) for the nearby stores feature.
- * NEW: "Detect My Location" button auto-fills lat/lng using browser GPS.
+ * admin/shops.php
+ * ================
+ * SHOP BRANCH MANAGEMENT
+ *
+ * Admin can add, edit, delete, and toggle (activate/deactivate) shop branches.
+ * Each shop has GPS coordinates (lat/lng) for the "Nearby Stores" feature shown
+ * to customers during checkout.
+ *
+ * HOW IT WORKS:
+ *   1. POST 'save'   → INSERT (new) or UPDATE (existing) a shop
+ *   2. POST 'delete' → DELETE a shop permanently
+ *   3. POST 'toggle' → Flip is_active (0 = hidden from customers, 1 = visible)
+ *   4. GET  'edit'   → Load a shop into the form for editing
  */
+
+// ─── Access Control ────────────────────────────────────────────────────────────
 $required_role = 'admin';
-require_once '../includes/auth_check.php';
-require_once '../config/db.php';
+require_once '../includes/auth_check.php'; // Only admins can manage shops
+require_once '../config/db.php';           // Opens $conn
 
-$message = '';
-$editShop = null;
+$message = ''; // Holds result message to display after action
+$editShop = null; // Holds shop data when in "edit mode"
 
+// ─── Handle POST Actions ───────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // The hidden 'action' input determines which operation to run
     $action  = $_POST['action'] ?? '';
 
+    // ── SAVE: Add a new shop or update an existing one ─────────────────────────
     if ($action === 'save') {
-        $sid      = (int)($_POST['shop_id'] ?? 0);
+        $sid      = (int)($_POST['shop_id'] ?? 0); // 0 = adding new; >0 = editing existing
         $name     = trim($_POST['name']     ?? '');
         $address  = trim($_POST['address']  ?? '');
         $phone    = trim($_POST['phone']    ?? '');
-        $lat      = (float)($_POST['lat']   ?? 0);
-        $lng      = (float)($_POST['lng']   ?? 0);
-        $ownerId  = (int)($_POST['owner_id']?? 0);
-        $active   = isset($_POST['is_active']) ? 1 : 0;
+        $lat      = (float)($_POST['lat']   ?? 0); // GPS latitude
+        $lng      = (float)($_POST['lng']   ?? 0); // GPS longitude
+        $ownerId  = (int)($_POST['owner_id']?? 0); // Assigned shopkeeper (0 = none)
+        $active   = isset($_POST['is_active']) ? 1 : 0; // 1 = visible to customers
 
+        // Validate required fields
         if (empty($name) || empty($address) || $lat == 0 || $lng == 0) {
             $message = 'error:Name, address, latitude, and longitude are required.';
         } elseif ($sid === 0) {
+            // New shop: INSERT into database
             $s = mysqli_prepare($conn,"INSERT INTO shops (name,address,phone,lat,lng,owner_id,is_active) VALUES (?,?,?,?,?,?,?)");
+            // Data types: s=string, d=double (decimal for GPS), i=integer
             mysqli_stmt_bind_param($s,'sssddii',$name,$address,$phone,$lat,$lng,$ownerId,$active);
             mysqli_stmt_execute($s) ? $message='success:Shop branch added!' : $message='error:Failed to add.';
         } else {
+            // Existing shop: UPDATE the record by its ID
             $s = mysqli_prepare($conn,"UPDATE shops SET name=?,address=?,phone=?,lat=?,lng=?,owner_id=?,is_active=? WHERE id=?");
             mysqli_stmt_bind_param($s,'sssddiii',$name,$address,$phone,$lat,$lng,$ownerId,$active,$sid);
             mysqli_stmt_execute($s) ? $message='success:Shop updated!' : $message='error:Update failed.';
         }
+
+    // ── DELETE: Permanently remove a shop branch ───────────────────────────────
     } elseif ($action === 'delete') {
         $sid = (int)($_POST['shop_id'] ?? 0);
         $s = mysqli_prepare($conn,"DELETE FROM shops WHERE id=?");
         mysqli_stmt_bind_param($s,'i',$sid);
         mysqli_stmt_execute($s) ? $message='success:Shop deleted.' : $message='error:Delete failed.';
+
+    // ── TOGGLE: Flip is_active between 1 (open) and 0 (closed) ───────────────
     } elseif ($action === 'toggle') {
         $sid = (int)($_POST['shop_id'] ?? 0);
+        // NOT is_active flips the boolean value
         mysqli_query($conn,"UPDATE shops SET is_active=NOT is_active WHERE id=$sid");
         $message='success:Status toggled.';
     }
 }
 
+// ─── Load Shop for Editing ─────────────────────────────────────────────────────
+// When the admin clicks ✏️ Edit, the URL becomes shops.php?edit=3
 if (isset($_GET['edit'])) {
     $editId  = (int)$_GET['edit'];
     $res     = mysqli_query($conn,"SELECT * FROM shops WHERE id=$editId");
-    $editShop= mysqli_fetch_assoc($res);
+    $editShop= mysqli_fetch_assoc($res); // Pre-fills the form with existing values
 }
 
+// ─── Load All Shops ────────────────────────────────────────────────────────────
+// LEFT JOIN with users: even shops with no assigned owner still appear
+// u.name AS owner_name shows the shopkeeper's name in the table
 $shops = mysqli_query($conn,"SELECT s.*,u.name AS owner_name FROM shops s LEFT JOIN users u ON s.owner_id=u.id ORDER BY s.name");
+
+// Load only shopkeeper accounts for the "Assign Shopkeeper" dropdown
 $shopkeepers = mysqli_query($conn,"SELECT id,name FROM users WHERE role='shopkeeper' ORDER BY name");
+
+// Parse message: 'success:Shop updated!' → $msgType='success', $msgText='Shop updated!'
 [$msgType,$msgText] = $message ? explode(':',$message,2) : ['',''];
 ?>
 <!DOCTYPE html><html lang="en"><head>
