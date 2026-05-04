@@ -23,8 +23,12 @@
             <img src="assets/logo/image.png" alt="Ghanshaym bakery and live cakeshop">
             <h1>Ghanshyam Bakery & Live Cake Shop</h1>
         </div>
+        <!-- Mobile Hamburger Button (visible only on small screens via CSS) -->
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu" onclick="document.querySelector('nav ul').classList.toggle('show')">
+            <span></span><span></span><span></span>
+        </button>
         <nav>
-            <ul>
+            <ul id="mainNav">
                 <!-- Navigation links to jump to different parts of the landing page -->
                 <li><a href="#home">Home</a></li>
                 <li><a href="about.php">About Us</a></li>

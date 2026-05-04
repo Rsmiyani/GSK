@@ -156,7 +156,9 @@ $nextStatus = [
 </style>
 </head><body class="dashboard-body">
 
-<aside class="sidebar">
+<div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <img src="../assets/logo/image.png" alt="logo">
         <div><h2>My Shop</h2><span>Shopkeeper Portal</span></div>
@@ -173,7 +175,10 @@ $nextStatus = [
 
 <div class="main-content">
     <div class="topbar">
-        <div class="topbar-title"><h1>📦 Orders</h1><p>Manage incoming orders for your shop</p></div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+            <div class="topbar-title"><h1>📦 Orders</h1><p>Manage incoming orders for your shop</p></div>
+        </div>
         <div class="topbar-user">
             <div class="user-info"><strong><?= htmlspecialchars($_SESSION['user_name']) ?></strong><span>Shopkeeper</span></div>
             <div class="avatar"><?= strtoupper(substr($_SESSION['user_name'],0,1)) ?></div>
@@ -366,4 +371,10 @@ $nextStatus = [
         </div>
     </div>
 </div>
+<script>
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+}
+</script>
 </body></html>

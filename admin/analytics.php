@@ -272,14 +272,20 @@ $chartPalette = ['#e91e8c','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#0
         <div class="charts-row">
             <div class="chart-card">
                 <h3>📈 Daily Revenue Trend (All Shops)</h3>
-                <canvas id="revenueTrendChart"></canvas>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="revenueTrendChart"></canvas>
+                </div>
             </div>
             <div class="chart-card">
                 <h3>📊 Order Status</h3>
-                <canvas id="statusChart" style="max-height:220px;"></canvas>
+                <div style="position:relative; height:220px; width:100%;">
+                    <canvas id="statusChart"></canvas>
+                </div>
                 <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:16px;">
                     <h3 style="font-size:0.95rem; margin-bottom:12px;">🚚 Delivery vs Pickup</h3>
-                    <canvas id="typeChart" style="max-height:180px;"></canvas>
+                    <div style="position:relative; height:180px; width:100%;">
+                        <canvas id="typeChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -288,11 +294,15 @@ $chartPalette = ['#e91e8c','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#0
         <div class="charts-row">
             <div class="chart-card">
                 <h3>🏪 Revenue by Shop</h3>
-                <canvas id="shopRevenueChart"></canvas>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="shopRevenueChart"></canvas>
+                </div>
             </div>
             <div class="chart-card">
                 <h3>👥 New Customers</h3>
-                <canvas id="customerChart" style="max-height:260px;"></canvas>
+                <div style="position:relative; height:260px; width:100%;">
+                    <canvas id="customerChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -339,7 +349,6 @@ $chartPalette = ['#e91e8c','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#0
     </div>
 </div>
 
-<script>
 <script>
 /**
  * Color palette shorthand object.

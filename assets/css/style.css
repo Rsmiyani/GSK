@@ -921,3 +921,381 @@ footer {
     background-color: #5a2d2d;
     color: #fff5e6;
 }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN - MOBILE & TABLET BREAKPOINTS
+   ==========================================================================
+   These rules make the public-facing landing page (index.php), about,
+   terms, privacy, login, signup, and customer_dashboard pages fully
+   responsive across phones, tablets, and desktops.
+   ========================================================================== */
+
+/* ─── Mobile Hamburger Menu Toggle ───────────────────────────────────────── */
+.mobile-menu-btn {
+    display: none;           /* Hidden on desktop */
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 110;
+}
+.mobile-menu-btn span {
+    display: block;
+    width: 24px;
+    height: 2.5px;
+    background-color: #5a2d2d;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+/* ─── TABLET (≤ 1024px) ─────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    header {
+        padding: 12px 24px;
+    }
+
+    nav ul {
+        gap: 18px;
+    }
+
+    nav ul li a {
+        font-size: 0.95rem;
+    }
+
+    .hero-content h2 {
+        font-size: 2.5rem;
+    }
+
+    .hero-content p {
+        font-size: 1.1rem;
+    }
+
+    .how-it-works h2,
+    .featured-cakes h2 {
+        font-size: 2rem;
+    }
+
+    .step-card,
+    .cake-card {
+        width: 45%;    /* Two per row on tablets */
+        min-width: 220px;
+    }
+
+    .dashboard-container {
+        flex-direction: column;
+    }
+
+    .dashboard-sidebar {
+        width: 100%;
+    }
+
+    .dashboard-header h2 {
+        font-size: 1.8rem;
+    }
+}
+
+/* ─── MOBILE (≤ 768px) ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    /* -- Header & Navigation -- */
+    header {
+        padding: 10px 16px;
+        position: relative;
+    }
+
+    header .logo h1 {
+        font-size: 1rem;
+    }
+
+    header .logo img {
+        height: 42px;
+        width: 42px;
+    }
+
+    header .logo {
+        gap: 10px;
+    }
+
+    /* Show hamburger button */
+    .mobile-menu-btn {
+        display: flex;
+    }
+
+    /* Mobile navigation: full-width dropdown */
+    nav ul {
+        display: none;       /* Hidden by default on mobile */
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 12px 30px rgba(90, 45, 45, 0.12);
+        padding: 20px;
+        gap: 0;
+        z-index: 100;
+        border-bottom: 3px solid #f5c6cb;
+    }
+
+    nav ul.show {
+        display: flex;      /* Shown when hamburger is clicked */
+    }
+
+    nav ul li {
+        width: 100%;
+    }
+
+    nav ul li a {
+        display: block;
+        padding: 14px 16px;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: background-color 0.2s;
+    }
+
+    nav ul li a:hover {
+        background-color: #fff5e6;
+    }
+
+    nav ul li a::after {
+        display: none;     /* No hover underline on mobile */
+    }
+
+    .btn-login {
+        text-align: center;
+        margin-top: 8px;
+    }
+
+    /* -- Hero Section -- */
+    .hero {
+        height: 55vh;
+    }
+
+    .hero-content h2 {
+        font-size: 1.7rem;
+        margin-bottom: 12px;
+    }
+
+    .hero-content p {
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+        padding: 0 16px;
+    }
+
+    .hero-cta {
+        bottom: 8%;
+    }
+
+    .btn-primary {
+        padding: 12px 24px;
+        font-size: 1rem;
+    }
+
+    .location-status {
+        font-size: 0.85rem;
+    }
+
+    /* -- How It Works Section -- */
+    .how-it-works {
+        padding: 50px 0;
+    }
+
+    .how-it-works h2 {
+        font-size: 1.6rem;
+        margin-bottom: 30px;
+    }
+
+    .steps-grid {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .step-card {
+        width: 90%;
+        min-width: unset;
+    }
+
+    .step-icon {
+        font-size: 2.4rem;
+        padding: 12px;
+    }
+
+    /* -- Featured Cakes Section -- */
+    .featured-cakes {
+        padding: 50px 0;
+    }
+
+    .featured-cakes h2 {
+        font-size: 1.6rem;
+        margin-bottom: 24px;
+    }
+
+    .cake-grid {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .cake-card {
+        width: 90%;
+        min-width: unset;
+    }
+
+    .cake-card img {
+        height: 180px;
+    }
+
+    /* -- About Section -- */
+    .about {
+        padding: 50px 0;
+    }
+
+    .about h2 {
+        font-size: 1.6rem;
+    }
+
+    .about p {
+        font-size: 1rem;
+        padding: 0 16px;
+    }
+
+    /* -- Footer -- */
+    .footer-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 24px;
+        padding: 0 20px 24px;
+    }
+
+    .footer-box {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .footer-box h3 {
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+    }
+
+    .footer-logo {
+        height: 55px;
+        margin-bottom: 12px;
+    }
+
+    .footer-bottom {
+        font-size: 0.8rem;
+        padding: 16px 12px;
+    }
+
+    footer {
+        padding: 30px 0 16px 0;
+    }
+
+    /* -- Login Page -- */
+    .login-main {
+        padding: 30px 16px;
+    }
+
+    .login-card {
+        padding: 28px 20px;
+    }
+
+    .mini-logo {
+        width: 70px;
+        height: 70px;
+    }
+
+    .login-card-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .login-welcome h3 {
+        font-size: 1.2rem;
+    }
+
+    .social-buttons {
+        flex-direction: column;
+    }
+
+    /* -- Dashboard (Customer Legacy) -- */
+    .dashboard-container {
+        flex-direction: column;
+        gap: 16px;
+        padding: 0 12px;
+        margin: 20px auto;
+    }
+
+    .dashboard-sidebar {
+        width: 100%;
+        padding: 20px 16px;
+    }
+
+    .dashboard-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .recent-orders {
+        padding: 16px;
+        overflow-x: auto;
+    }
+
+    .recent-orders h3 {
+        font-size: 1.2rem;
+    }
+
+    .orders-table {
+        min-width: 500px;  /* Allows horizontal scroll */
+    }
+}
+
+/* ─── SMALL MOBILE (≤ 480px) ────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    header .logo h1 {
+        font-size: 0.85rem;
+    }
+
+    header .logo img {
+        height: 36px;
+        width: 36px;
+    }
+
+    .hero {
+        height: 45vh;
+    }
+
+    .hero-content h2 {
+        font-size: 1.35rem;
+    }
+
+    .hero-content p {
+        font-size: 0.85rem;
+    }
+
+    .btn-primary {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+
+    .step-card,
+    .cake-card {
+        width: 95%;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .stat-card .icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.8rem;
+    }
+}

@@ -148,7 +148,9 @@ while ($row = mysqli_fetch_assoc($res)) {
 </head>
 <body class="dashboard-body">
 
-<aside class="sidebar">
+<div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <img src="../assets/logo/image.png" alt="GSK Logo">
         <div><h2><?= htmlspecialchars(substr($shopInfo['name'],0,20)) ?></h2><span>Shopkeeper Portal</span></div>
@@ -165,9 +167,12 @@ while ($row = mysqli_fetch_assoc($res)) {
 
 <div class="main-content">
     <div class="topbar">
-        <div class="topbar-title">
-            <h1>📊 Analytics</h1>
-            <p><?= htmlspecialchars($shopInfo['name']) ?> • Last <?= $range ?> days</p>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+            <div class="topbar-title">
+                <h1>📊 Analytics</h1>
+                <p><?= htmlspecialchars($shopInfo['name']) ?> • Last <?= $range ?> days</p>
+            </div>
         </div>
         <div class="topbar-user">
             <div class="user-info"><strong><?= htmlspecialchars($_SESSION['user_name']) ?></strong><span>Shopkeeper</span></div>
@@ -217,11 +222,15 @@ while ($row = mysqli_fetch_assoc($res)) {
         <div class="charts-row">
             <div class="chart-card">
                 <h3>📈 Daily Revenue Trend</h3>
-                <canvas id="revenueChart"></canvas>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
             </div>
             <div class="chart-card">
                 <h3>📊 Order Status</h3>
-                <canvas id="statusChart"></canvas>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="statusChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -248,10 +257,14 @@ while ($row = mysqli_fetch_assoc($res)) {
             </div>
             <div class="chart-card">
                 <h3>⏰ Orders by Hour</h3>
-                <canvas id="hourlyChart"></canvas>
+                <div style="position:relative; height:300px; width:100%;">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
                 <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
                     <h3 style="font-size:0.95rem; margin-bottom:12px;">🚚 Delivery vs Pickup</h3>
-                    <canvas id="typeChart" style="max-height:180px;"></canvas>
+                    <div style="position:relative; height:200px; width:100%;">
+                        <canvas id="typeChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -336,6 +349,12 @@ new Chart(document.getElementById('typeChart'), {
     },
     options: { responsive: true, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 10, font: { size: 11 } } } } }
 });
+</script>
+<script>
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+}
 </script>
 </body>
 </html>

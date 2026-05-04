@@ -68,6 +68,9 @@
                 <h1>Ghanshyam Bakery & Live Cake Shop</h1>
             </a>
         </div>
+        <button class="mobile-menu-btn" onclick="document.querySelector('nav ul').classList.toggle('show')" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
         <nav>
             <ul>
                 <li><a href="index.php">Home</a></li>

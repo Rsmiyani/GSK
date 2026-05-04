@@ -83,9 +83,11 @@ if ($shopId) {
 </head>
 <body class="dashboard-body">
 
+<div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
 <!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════════
      Left navigation panel. The shop name is shown dynamically.               -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <img src="../assets/logo/image.png" alt="GSK Logo">
         <!-- Show the shop's name (up to 20 chars) if assigned, else 'My Shop' -->
@@ -107,10 +109,15 @@ if ($shopId) {
     <!-- ── Top Bar ──────────────────────────────────────────────────────────
          Shows the shop's full name as the subtitle.                           -->
     <div class="topbar">
-        <div class="topbar-title">
-            <h1>Shop Dashboard</h1>
-            <!-- Display shop name, or a warning if no shop is assigned -->
-            <p><?= $shopInfo ? htmlspecialchars($shopInfo['name']) : 'No shop assigned yet' ?></p>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="topbar-title">
+                <h1>Shop Dashboard</h1>
+                <!-- Display shop name, or a warning if no shop is assigned -->
+                <p><?= $shopInfo ? htmlspecialchars($shopInfo['name']) : 'No shop assigned yet' ?></p>
+            </div>
         </div>
         <div class="topbar-user">
             <div class="user-info"><strong><?= htmlspecialchars($_SESSION['user_name']) ?></strong><span>Shopkeeper</span></div>
@@ -214,5 +221,11 @@ if ($shopId) {
         <?php endif; // end if $shopId — closes the "no shop assigned" check ?>
     </div>
 </div>
+<script>
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+}
+</script>
 </body>
 </html>
